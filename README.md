@@ -12,7 +12,7 @@ Example commands:
 
 'go down' (or just 'down' or 'd')
 
-'hit tall kobold with iron sword' (or just 'hit thin')
+'hit tall kobold with iron sword' (or just 'hit tall')
 
 'take key'
 
