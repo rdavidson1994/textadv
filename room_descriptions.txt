@@ -1,0 +1,91 @@
+@KOBOLD ROOMS:
+
+@TreasureRoom
+You stand in a cramped circular chamber.
+{bones:, its walls decked with bones and skulls of various sizes.}
+{pedestal: On the far side of the room is a rough hewn stone pedestal.
+  {chest:, holding a small but sturdy-looking oaken chest.}
+}
+
+@Apothecary
+This wide wedge-shaped room slopes downward toward its apex, where the wall has been carved to form a stone workbench.
+{pots:
+  Hollows are dug into the bench, used to store clay pots full of foul-smelling potion ingredients.
+*else:
+  , with empty hollows dug into it for storage.
+}
+{potion:
+  On top of the workbench sits a potion in a dusty glass vial,
+  its swirling contents bathing the dark room in faint green glow.
+}
+
+@CaveEntrance
+You are standing in a rocky pit, which leads into an underground cave. The tight cave entrance is covered by hanging animal hides, which the kobolds seem to be using as
+curtains to keep out light.
+{animal skulls: On either side of the entrance is a small pile of animal skulls, apparently set out as a warning to intruders.}
+
+@Prison
+This small, dank room serve{present:s*else:d} as a prison.
+{cage:
+  Half of it is taken up by an iron cage, which is
+  {locked:
+    secured with a padlock.
+  *else:
+    currently wide open.
+  }
+}
+
+@Kitchen
+You are in the kobolds' kitchen. A low stone outcropping runs along one side of the room, serving as a counter.
+{meat: Meat of indeterminate age and origin hangs from metal hooks driven into the opposite wall.}
+{knife: Resting in the middle of the counter is a crude but dangerous-looking iron cleaver.}
+
+@BossQuarters
+This room must be the private quarters of the kobolds' leader.
+{bed: Though claustrophobic by human standards, the room has a proper wooden bed}
+{curtains: and curtains made from bone beads to keep out prying eyes.}
+
+@Barracks
+This room appears to be the kobolds' sleeping quarters.
+{bed: Small makeshift beds are strewn haphazardly around the room, emanating their owners' unpleasant scent.}
+
+@MessHall
+This rectangular room appears to be a dining area.
+In the center of the room, a ring shape has been mined out from the floor.
+{table:
+    , creating a raised platform in the middle
+    for the diners to use as a table.
+    {scraps:
+        Scraps and debris from the inhabitants'
+        most recent meal litter the table's surface.
+    }
+}
+
+@TombEntrance
+You stand at the entryway of a stone mausoleum, built into the side of a natural hill.
+{slab: Its entryway is blocked off by a heavy rock slab.
+*else: Its open entryway reveals a narrow passage leading underground.}
+
+@TombSanctum
+This dark and dusty chamber is the personal tomb of some venerated person.
+{coffin: An ornate stone coffin sits in its center, open and empty.}
+{painting: A weathered painting of the owner hang on the far wall.}
+
+@MeatChamber
+The original function of this room is quite unrecognizable. Its current denizens have {corpses: filled it with a dozen or so half-eaten corpses, and} painted the walls red with gore.
+
+@OfferingRoom
+This room is intended as a quiet place for family members to present prayers and offerings to those that rest here. A few small shrines stand in alcoves along the walls.
+{candles: , each decked with
+    {lit: candles that burn faintly
+    *else: long extinguished candles}
+}
+
+@Crypt
+This long, tall-ceilinged, rectangular room has shelves along the sides,{bones: *else: presumably} to house the bones of common people.
+
+@Temple
+This room houses a humble church {pews:, with pews to hold thirty-some people},
+intended for viewings and small memorial services.
+{windows: Large glass windows *else: Ruined, paneless windows}
+provide some of the complex's only natural light.

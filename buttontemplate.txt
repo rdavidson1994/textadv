@@ -1,0 +1,9 @@
+<div class="dropdown">'
+<button onclick="displayDropdown(this)" class="dropbtn">
+text
+</button>
+<div id="myDropdown" class="dropdown-content">
+<button onclick="sendPost(\'{verb} {text}\')">{verb}</button>
+<a href="?buttonInput={verb} {text}">{verb}</a> //one link for each verb
+</div>
+</div>
