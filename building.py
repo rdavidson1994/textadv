@@ -1,6 +1,7 @@
 import game_object
 import shopkeeper
-
+from namemaker import NameMaker
+from game_object import Name
 
 class Building(game_object.Location):
     def __init__(self, source_location, *args, **kwargs):
@@ -11,8 +12,8 @@ class Building(game_object.Location):
 class Shop(Building):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.shopkeeper = shopkeeper.ShopkeeperActor(name="shopkeeper",
-                                                     location=self,)
+        name = Name(n=[NameMaker().create_word(), "shopkeeper"])
+        self.shopkeeper = shopkeeper.Actor(name=name, location=self)
 
 
 class WeaponShop(Shop):

@@ -62,14 +62,14 @@ In the center of the room, a ring shape has been mined out from the floor.
 }
 
 @TombEntrance
-You stand at the entryway of a stone mausoleum, built into the side of a natural hill.
+You stand before the face of a stone mausoleum, built into the side of a natural hill.
 {slab: Its entryway is blocked off by a heavy rock slab.
 *else: Its open entryway reveals a narrow passage leading underground.}
 
 @TombSanctum
 This dark and dusty chamber is the personal tomb of some venerated person.
 {coffin: An ornate stone coffin sits in its center, open and empty.}
-{painting: A weathered painting of the owner hang on the far wall.}
+{painting: A weathered painting of the owner hangs on the far wall.}
 
 @MeatChamber
 The original function of this room is quite unrecognizable. Its current denizens have {corpses: filled it with a dozen or so half-eaten corpses, and} painted the walls red with gore.

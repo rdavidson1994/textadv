@@ -27,6 +27,11 @@ class WideLocation(game_object.Location):
         out += "\nCoordinates: " + str(viewer.coordinates)
         return out
 
+    def distance(self, first, second):
+        x1, y1 = first.get_coordinates(self)
+        x2, y2 = second.get_coordinates(self)
+        return (x1 - x2) ** 2 + (y1 - y2) ** 2
+
     def line_of_sight(self, first, second, cutoff=None):
         if cutoff is None:
             cutoff = self.view_distance

@@ -1,9 +1,10 @@
 from random import random, choice, uniform
 from string import ascii_uppercase
 from math import sqrt
+from namemaker import NameMaker
 
 def distance(a, b):
-    return sqrt(sum(x**2 + y**2 for x,y in zip(a.coordinates, b.coordinates)))
+    return sqrt(sum(x**2 + y**2 for x, y in zip(a.coordinates, b.coordinates)))
 
 
 class Context:
@@ -36,15 +37,16 @@ class Context:
 
 
 class DemoContext(Context):
-    number_of_caves = 20
+    number_of_caves = 8
     number_of_towns = 6
+    name_maker = NameMaker()
 
     def __init__(self):
         Context.__init__(self)
         for i in range(self.number_of_caves):
             self.add_place(Cave(self.random_point()))
         for i in range(self.number_of_towns):
-            town = Town(self, name=ascii_uppercase[i])
+            town = Town(self, name=self.name_maker.create_word())
             self.add_agent(town)
 
 

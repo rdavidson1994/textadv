@@ -1,5 +1,6 @@
 from game_object import Location, Item, Thing, FoodItem, Cage, Name, PortalEdge, Landmark
 from actor import Prisoner
+from namemaker import NameMaker
 from random import choice
 import logging
 from action import Eat
@@ -327,7 +328,7 @@ class Prison(GeneratedRoom):
                          key=key, )
         self.decor_dict["cage"] = self.cage
         self.cage.locked = True
-        prisoner = Prisoner(name="prisoner",
+        prisoner = Prisoner(name=NameMaker().create_word(),
                             location=self,
                             sched=self.schedule)
         self.cage.add_prisoner(prisoner)

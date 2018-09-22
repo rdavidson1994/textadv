@@ -61,16 +61,6 @@ class Name:
             return False
 
 
-class before:
-    def __init__(self, event):
-        self.event = event
-
-    def __call__(self, func):
-        def newf(*args, **kwargs):
-            return func(*args, **kwargs)
-        return newf
-
-
 class Landmark:
     def __init__(self, name, location=None, coordinates=None, basis=None):
         self.name = name
@@ -96,16 +86,15 @@ class Landmark:
         return self.name.matches(text)
 
 
-
 class Thing:
     def __init__(self,
                  location = None,
                  name="",
                  coordinates=None,
-                 other_names=[],
+                 other_names=(),
                  sched=None,
-                 traits=[],
-                 names=[],
+                 traits=(),
+                 names=(),
                  *args,
                  **kwargs):
         self.trapping_item = None
@@ -210,8 +199,6 @@ class Thing:
     def has_name(self, name):
         if self.name_object:
             return self.name_object.matches(name)
-        elif name in self.synonyms:
-            return True
         else:
             return False
 
