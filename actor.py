@@ -26,7 +26,9 @@ class Actor(game_object.Thing):
         if self.schedule is None:
             self.schedule = schedule.DefaultSchedule()
 
-        self.schedule.add_actor(self)
+        self.scheduler = schedule.ActorSubscriber(self, self.schedule)
+
+        # self.schedule.add_actor(self)
         self.free_action = True
         self.money = 0 # TODO: Abstract this out
 
@@ -106,7 +108,7 @@ class Actor(game_object.Thing):
         return "Actor({})".format(self.name)
 
     def vanish(self):
-        self.schedule.remove_actor(self)
+        self.scheduler.terminate()
         super().vanish()
 
     def create_corpse(self):
@@ -141,7 +143,7 @@ class Actor(game_object.Thing):
         self.cancel_actions()
 
     def cancel_actions(self):
-        self.schedule.cancel_actions(self)
+        self.scheduler.cancel_actions()
 
     def die(self, damage_ammount=0, damage_type=None):
         self.create_corpse()
@@ -178,11 +180,11 @@ class Actor(game_object.Thing):
         return triangular(0, 80) + modifier
 
     def set_body_timer(self):
-        self.schedule.set_timer(self, 500, "body update")
+        self.scheduler.set_timer(self.body.update, 500, "body update")
 
-    def hear_timer(self, keyword):
-        if keyword == "body update":
-            self.body.update()
+    # def hear_timer(self, keyword):
+    #     if keyword == "body update":
+    #        self.body.update()
 
     def is_hero(self):
         return False

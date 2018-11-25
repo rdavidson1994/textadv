@@ -55,8 +55,9 @@ class AI(Routine):
         return self.get_local_action()
 
     def get_current_action(self):
+        # TODO: Unbork this
         try:
-            event = self.actor.scheduled_event
+            event = self.actor.subscriber.scheduled_event
             if event.is_cooldown:
                 return None
             else:

@@ -3,6 +3,38 @@ from errors import ScheduleError
 debug = logging.debug
 logging.basicConfig(level=logging.WARNING, format='%(message)s')
 
+class Subscriber:
+    def __init__(self, schedule):
+        self.schedule = schedule
+        self.schedule.add_subscriber(self)
+        self.scheduled_event = None
+    
+    def terminate(self):
+        self.schedule.remove_subscriber(self)
+
+    def set_timer(self, callback, time, keyword=""):
+        self.schedule.set_timer(callback, time, keyword)
+
+    def cancel_actions(self):
+        self.schedule.cancel_actions(self)
+    
+    def stop_game(self):
+        self.schedule.stop_game()
+    
+    def act(self):
+        raise NotImplementedError
+
+
+class ActorSubscriber(Subscriber):
+    def __init__(self, actor, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.actor = actor
+
+    def act(self):
+        action = self.actor.get_action()
+        new_event = ActionEvent(action, self.schedule, self)
+
+
 
 class Event:
     def __init__(self, schedule, time=0, content=None, instant=False):
@@ -11,7 +43,7 @@ class Event:
         self.schedule = schedule
         self.is_instant = instant
         schedule.add_event(self)
-        self.actor = None
+        self.subscriber = None
 
     def __repr__(self):
         return self.content
@@ -21,31 +53,36 @@ class Event:
 
 
 class TimerEvent(Event):
-    def __init__(self, schedule, actor, time, keyword):
-        self.keyword = keyword
-        self.actor = actor
+    def __init__(self, schedule, subscriber, time, callback):
+        self.subscriber = subscriber
         self.schedule = schedule
         self.time = time + schedule.current_time
         self.is_instant = False
         self.action = None
         self.schedule.add_event(self)
-
+        self.callback = callback
+    
     def happen(self):
-        self.actor.hear_timer(self.keyword)
+        self.callback()
+
+    # def happen(self):
+    #     self.subscriber.hear_timer(self.keyword)
 
 
 class ActionEvent(Event):
     is_cooldown = False
 
-    def __init__(self, action):
+    def __init__(self, action, schedule, subscriber):
         self.is_instant = action.is_instant
-        self.schedule = action.actor.schedule
+        self.schedule = schedule
         self.action = action
-        self.actor = action.actor
-        if self.actor.scheduled_event:
+        self.subscriber = subscriber
+        self.true_actor = action.actor
+        if self.subscriber.scheduled_event:
+            print(self.subscriber.scheduled_event)
             raise ScheduleError
         else:
-            self.actor.scheduled_event = self
+            self.subscriber.scheduled_event = self
         self.time = self.get_time()
         self.schedule.add_event(self)
 
@@ -56,14 +93,14 @@ class ActionEvent(Event):
         return self.action.time_elapsed + self.schedule.current_time
 
     def happen(self):
-        assert self.actor.scheduled_event == self
-        self.actor.scheduled_event = None
-        self.actor.attempt_action(self.action)
+        assert self.subscriber.scheduled_event == self
+        self.subscriber.scheduled_event = None
+        self.true_actor.attempt_action(self.action)
         try:
             if self.action.cooldown_time == 0:
-                self.schedule.grant_action(self.actor)
+                self.schedule.grant_action(self.subscriber)
             else:
-                new_event = CooldownEvent(self.action)
+                new_event = CooldownEvent(self.action, self.schedule, self.subscriber)
         except ScheduleError:
             pass
 
@@ -78,22 +115,22 @@ class CooldownEvent(ActionEvent):
         return self.action.cooldown_time + self.schedule.current_time
 
     def happen(self):
-        assert self.actor.scheduled_event == self
-        self.actor.scheduled_event = None
-        self.schedule.grant_action(self.actor)
+        assert self.subscriber.scheduled_event == self
+        self.subscriber.scheduled_event = None
+        self.schedule.grant_action(self.subscriber)
 
 
 class Schedule:
     def __init__(self):
         self.current_time = 0
         self.event_list = list()
-        self.actors = list()
-        self.stopped_actors = list()
-        self.new_stopped_actors = list()
+        self.subscribers = list()
+        self.stopped_subscribers = list()
+        self.new_stopped_subscribers = list()
         self.end_game = False
 
-    def set_timer(self, actor, time, keyword=""):
-        event = TimerEvent(self, actor, time, keyword)
+    def set_timer(self, callback, time, keyword=""):
+        TimerEvent(self, callback, time, keyword)
 
     def add_event(self, new_event):
         if new_event.is_instant:
@@ -109,23 +146,23 @@ class Schedule:
             except IndexError:
                 self.event_list.append(new_event)
 
-    def add_actor(self, actor):
-        self.actors.append(actor)
-        self.stopped_actors.append(actor)
+    def add_subscriber(self, subscriber):
+        self.stopped_subscribers.append(subscriber)
+        self.stopped_subscribers.append(subscriber)
 
-    def remove_actor(self, actor):
-        self.actors.remove(actor)
+    def remove_subscriber(self, subscriber):
+        self.stopped_subscribers.remove(subscriber)
 
-    def cancel_actions(self, actor):
-        e = actor.scheduled_event
+    def cancel_actions(self, subscriber):
+        e = subscriber.scheduled_event
         if e is not None and not isinstance(e, CooldownEvent):
             # debug("queue before cancellation {}".format(self.event_list))
             self.event_list = [e for e in self.event_list
-                               if e.actor != actor
+                               if e.subscriber != subscriber
                                or e.action is None]
             # debug("queue after cancellation {}".format(self.event_list))
-            actor.scheduled_event = None
-            self.grant_action(actor)
+            subscriber.scheduled_event = None
+            self.grant_action(subscriber)
             # debug("queue after grant {}".format(self.event_list))
         else:
             pass
@@ -134,29 +171,28 @@ class Schedule:
     def stop_game(self):
         self.end_game = True
 
-    def grant_action(self, actor):
+    def grant_action(self, subscriber):
         debug("Action granted")
-        if actor.scheduled_event:
+        if subscriber.scheduled_event:
             raise ScheduleError
-        elif self.end_game == False and actor in self.actors:
-            action = actor.get_action()
-            new_event = ActionEvent(action)
+        elif self.end_game == False and subscriber in self.stopped_subscribers:
+            subscriber.act()
         else:
-            self.new_stopped_actors.append(actor)
+            self.new_stopped_subscribers.append(subscriber)
 
     def run_game(self):
         self.end_game = False
-        new_stopped_actors = list()
-        for actor in self.stopped_actors:
-            debug("action granted to stopped actor")
-            self.grant_action(actor)
-        self.stopped_actors = new_stopped_actors
+        new_stopped_subscribers = list()
+        for subscriber in self.stopped_subscribers:
+            debug("action granted to stopped subscriber")
+            self.grant_action(subscriber)
+        self.stopped_subscribers = new_stopped_subscribers
         while self.end_game == False and self.event_list:
             # print(f"{self}.end_game is False")
             # debug("{}".format(self.event_list))
             event = self.event_list.pop()
             # debug("{}".format(event))
-            if event.actor in self.actors:
+            if event.subscriber in self.stopped_subscribers:
                 self.current_time = event.time
                 event.happen()
             else:

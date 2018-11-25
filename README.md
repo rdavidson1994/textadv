@@ -2,33 +2,33 @@
 
 Make sure you have the latest python3 install. Then do this:
 
-py world.py
+`py world.py`
 
 If that didn't work, do this
 
-python3 world.py
+`python3 world.py`
 
 Example commands:
 
-'inventory' or 'i'
+* 'inventory' or 'i'
 
-'map' or 'm'
+* 'map' or 'm'
 
-'health' or 'h'
+* 'health' or 'h'
 
-'quit'
+* 'quit'
 
-'go down' (or just 'down' or 'd')
+* 'go down' (or just 'down' or 'd')
 
-'hit tall kobold with iron sword' (or just 'hit tall')
+* 'hit tall kobold with iron sword' (or just 'hit tall')
 
-'take key'
+* 'take key'
 
-'unlock cage with key'
+* 'unlock cage with key'
 
-'go to town'
+* 'go to town'
 
-'wait for two minutes'
+* 'wait for two minutes'
 
-'rest'
+* 'rest'
 
