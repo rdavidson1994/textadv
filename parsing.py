@@ -113,11 +113,11 @@ class Parser(AI):
             text = action.get_success_string(viewer=self.actor)
             self.display(text)
             my_action = self.get_current_action()
-            conds = (my_action is not None,
-                     self.last_interrupt_request != my_action,
-                     text != "SILENCE",
-                     not self.taking_hostile_action(),)
-            if (all(conds)):
+            conditions = (my_action is not None,
+                          self.last_interrupt_request != my_action,
+                          text != "SILENCE",
+                          not self.taking_hostile_action(),)
+            if all(conditions):
                 self_hostile = getattr(my_action, "is_hostile", False)
                 # we shouldn't ask to interrupt the player's attacks.
                 if not self_hostile and action.actor.is_hostile_to(self.actor):

@@ -77,7 +77,7 @@ class ActionEvent(Event):
         self.schedule = schedule
         self.action = action
         self.subscriber = subscriber
-        self.true_actor = action.actor
+        self.actor = action.actor
         if self.subscriber.scheduled_event:
             print(self.subscriber.scheduled_event)
             raise ScheduleError
@@ -95,12 +95,12 @@ class ActionEvent(Event):
     def happen(self):
         assert self.subscriber.scheduled_event == self
         self.subscriber.scheduled_event = None
-        self.true_actor.attempt_action(self.action)
+        self.actor.attempt_action(self.action)
         try:
             if self.action.cooldown_time == 0:
                 self.schedule.grant_action(self.subscriber)
             else:
-                new_event = CooldownEvent(self.action, self.schedule, self.subscriber)
+                CooldownEvent(self.action, self.schedule, self.subscriber)
         except ScheduleError:
             pass
 
@@ -147,11 +147,11 @@ class Schedule:
                 self.event_list.append(new_event)
 
     def add_subscriber(self, subscriber):
-        self.stopped_subscribers.append(subscriber)
+        self.subscribers.append(subscriber)
         self.stopped_subscribers.append(subscriber)
 
     def remove_subscriber(self, subscriber):
-        self.stopped_subscribers.remove(subscriber)
+        self.subscribers.remove(subscriber)
 
     def cancel_actions(self, subscriber):
         e = subscriber.scheduled_event
@@ -175,28 +175,28 @@ class Schedule:
         debug("Action granted")
         if subscriber.scheduled_event:
             raise ScheduleError
-        elif self.end_game == False and subscriber in self.stopped_subscribers:
+        elif self.end_game is False and subscriber in self.subscribers:
             subscriber.act()
         else:
             self.new_stopped_subscribers.append(subscriber)
 
     def run_game(self):
         self.end_game = False
-        new_stopped_subscribers = list()
         for subscriber in self.stopped_subscribers:
             debug("action granted to stopped subscriber")
             self.grant_action(subscriber)
-        self.stopped_subscribers = new_stopped_subscribers
+        self.stopped_subscribers = []
         while self.end_game == False and self.event_list:
             # print(f"{self}.end_game is False")
             # debug("{}".format(self.event_list))
             event = self.event_list.pop()
             # debug("{}".format(event))
-            if event.subscriber in self.stopped_subscribers:
+            if event.subscriber in self.subscribers:
                 self.current_time = event.time
                 event.happen()
             else:
                 pass
+                # raise ScheduleError
         print("game over")
 
 

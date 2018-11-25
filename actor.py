@@ -8,7 +8,6 @@ from logging import debug
 from random import random, randint, triangular
 from game_object import Name
 
-
 class Actor(game_object.Thing):
 
     def __init__(self, *args, **kwargs):
@@ -26,7 +25,7 @@ class Actor(game_object.Thing):
         if self.schedule is None:
             self.schedule = schedule.DefaultSchedule()
 
-        self.scheduler = schedule.ActorSubscriber(self, self.schedule)
+        self.subscriber = schedule.ActorSubscriber(self, self.schedule)
 
         # self.schedule.add_actor(self)
         self.free_action = True
@@ -89,10 +88,10 @@ class Actor(game_object.Thing):
 
     def change_location(self, new_location, coordinates=None,
                         keep_arranged=False):
-        # This is pretty slow! Probably don't do this
+        # TODO: This is pretty slow! Probably don't do this
         super().change_location(new_location, coordinates, keep_arranged)
         for item in new_location.things:
-            if new_location.line_of_sight(self,item):
+            if new_location.line_of_sight(self, item):
                 self.ai.see_thing(item)
 
     def take_damage(self, amt, damage_type):
@@ -108,7 +107,7 @@ class Actor(game_object.Thing):
         return "Actor({})".format(self.name)
 
     def vanish(self):
-        self.scheduler.terminate()
+        self.subscriber.terminate()
         super().vanish()
 
     def create_corpse(self):
@@ -143,7 +142,7 @@ class Actor(game_object.Thing):
         self.cancel_actions()
 
     def cancel_actions(self):
-        self.scheduler.cancel_actions()
+        self.subscriber.cancel_actions()
 
     def die(self, damage_ammount=0, damage_type=None):
         self.create_corpse()
@@ -180,7 +179,7 @@ class Actor(game_object.Thing):
         return triangular(0, 80) + modifier
 
     def set_body_timer(self):
-        self.scheduler.set_timer(self.body.update, 500, "body update")
+        self.subscriber.set_timer(self.body.update, 500, "body update")
 
     # def hear_timer(self, keyword):
     #     if keyword == "body update":

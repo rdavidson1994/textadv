@@ -1,0 +1,24 @@
+<div class="dropdown">'
+<button onclick="displayDropdown(this)" class="dropbtn">
+text
+</button>
+<div id="myDropdown" class="dropdown-content">
+<button onclick="sendPost(\'{verb} {text}\')">{verb}</button>
+<a href="?buttonInput={verb} {text}">{verb}</a> //one link for each verb
+</div>
+</div>
+
+<div class="dropdown">
+<a class="dropdown-toggle">noun</a>
+<div class="dropdown-options">
+<button class="dropdown-option" data-text="{verb} {noun}">{verb}</button>
+</div>
+</div>
+
+<script>
+$(document).ready(function() {
+    $(document).on("click", ".dropdown-toggle", function(event) {
+
+    });
+});
+</script>
