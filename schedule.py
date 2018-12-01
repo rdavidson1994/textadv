@@ -21,17 +21,28 @@ class Event:
 
 
 class TimerEvent(Event):
-    def __init__(self, schedule, actor, time, keyword):
+    def __init__(self, schedule, actor, time, keyword=None, callback=None):
         self.keyword = keyword
+        self.callback = None
         self.actor = actor
         self.schedule = schedule
         self.time = time + schedule.current_time
         self.is_instant = False
         self.action = None
         self.schedule.add_event(self)
+        if self.keyword is None and self.callback is None:
+            raise Exception("To set a timer, you need a keyword or a callback. You passed neither.")
+        if self.keyword and self.callback:
+            raise Exception("You passed both a keyword and a callback. This is not supported.")
+
 
     def happen(self):
-        self.actor.hear_timer(self.keyword)
+        if self.keyword:
+            self.actor.hear_timer(self.keyword)
+        elif self.callback:
+            self.callback()
+        else:
+            raise Exception("Hey! A timer had no callback or keyword. 'Sup with that?")
 
 
 class ActionEvent(Event):
@@ -93,7 +104,7 @@ class Schedule:
         self.end_game = False
 
     def set_timer(self, actor, time, keyword=""):
-        event = TimerEvent(self, actor, time, keyword)
+        TimerEvent(self, actor, time, keyword)
 
     def add_event(self, new_event):
         if new_event.is_instant:
@@ -144,14 +155,19 @@ class Schedule:
         else:
             self.new_stopped_actors.append(actor)
 
-    def run_game(self):
+    def run_game(self, duration = None):
+        if duration is not None:
+            end_time = self.current_time + duration
+        else:
+            end_time = None
         self.end_game = False
         new_stopped_actors = list()
         for actor in self.stopped_actors:
-            debug("action granted to stopped actor")
+            debug("action granted to stopped actor? huh?")
             self.grant_action(actor)
         self.stopped_actors = new_stopped_actors
-        while self.end_game == False and self.event_list:
+        while (not self.end_game and self.event_list and
+               (end_time is None or self.current_time < end_time)):
             # print(f"{self}.end_game is False")
             # debug("{}".format(self.event_list))
             event = self.event_list.pop()
@@ -161,7 +177,7 @@ class Schedule:
                 event.happen()
             else:
                 pass
-        print("game over")
+        # print("game over")
 
 
 class DefaultSchedule(Schedule):

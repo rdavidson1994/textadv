@@ -3,6 +3,7 @@ import shopkeeper
 from namemaker import NameMaker
 from game_object import Name
 
+
 class Building(game_object.Location):
     def __init__(self, source_location, *args, **kwargs):
         super().__init__(*args, **kwargs)

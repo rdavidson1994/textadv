@@ -88,7 +88,7 @@ class Landmark:
 
 class Thing:
     def __init__(self,
-                 location = None,
+                 location=None,
                  name="",
                  coordinates=None,
                  other_names=(),
@@ -114,16 +114,13 @@ class Thing:
         if isinstance(name, Name):
             self.name_object = name
         elif names:
-            self.name_object = Name(a=[],n=names)
+            self.name_object = Name(a=[], n=names)
         else:
-            self.name_object = Name(a=[],n=[name])
+            self.name_object = Name(a=[], n=[name])
         self.name = self.name_object.get_text()
         self.nearest_portal = None
         self.owner = None
         self.price = None
-
-    def get_article(self, viewer=None,):
-        return " the "
 
     def get_identifier(self, viewer=None):
         return "the "+self.get_name(viewer)
