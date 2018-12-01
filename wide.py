@@ -1,15 +1,6 @@
-import os
-from itertools import groupby
-import phrase
-import parsing
 import game_object
-import actor
-import action
-import game_object
-import schedule
-import ai
-from random import random
-from direction import n,s,e,w,u,d
+import random
+
 # logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
 
@@ -26,6 +17,10 @@ class WideLocation(game_object.Location):
         out = super().describe(viewer, full_text)
         out += "\nCoordinates: " + str(viewer.coordinates)
         return out
+
+    def random_point(self):
+        return (random.uniform(0, self.width),
+                random.uniform(0, self.height),)
 
     def distance(self, first, second):
         x1, y1 = first.get_coordinates(self)

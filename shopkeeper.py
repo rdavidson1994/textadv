@@ -70,7 +70,7 @@ class ShopkeeperAI(ai.PeacefulAI):
         super().hear_announcement(act)
             
 
-class Actor(actor.Actor):
+class Actor(actor.Person):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ai = ShopkeeperAI(self)

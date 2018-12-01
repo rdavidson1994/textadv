@@ -10,7 +10,6 @@ from game_object import Name
 
 
 class Actor(game_object.Thing):
-
     def __init__(self, *args, **kwargs):
         game_object.Thing.__init__(self, *args, **kwargs)
         self.traits.update({"actor", "listener"})
@@ -28,7 +27,7 @@ class Actor(game_object.Thing):
 
         self.schedule.add_actor(self)
         self.free_action = True
-        self.money = 0 # TODO: Abstract this out
+        self.money = 0  # TODO: Abstract this out
 
     def attempt_action(self, action):
         # Many side effects! action.attempt later causes action.affect game
@@ -45,6 +44,45 @@ class Actor(game_object.Thing):
             return self.ai.final_transaction_check(action)
         else:
             return True, ""
+
+    def announce(self, action):
+        if getattr(action, "traverses_portals", False):
+            for loc in (action.target.location,
+                        action.target.opposite().location):
+                if loc:
+                    loc.broadcast_announcement(action)
+        elif self.location:
+            self.location.broadcast_announcement(action)
+        else:
+            pass
+
+    def vanish(self):
+        self.schedule.remove_actor(self)
+        super().vanish()
+
+    def cancel_actions(self):
+        self.schedule.cancel_actions(self)
+
+    def special_actor_effects(self, action):
+        debug("Special actor effects performed")
+        return True, ""
+
+    def receive_action_feedback(self, success, string):
+        pass
+
+    def perform_action(self, action):
+        action_ok, explanation = self.special_actor_effects(action)
+        if action_ok:
+            # If the action is allowed, lets the action instance do its thing.
+            return action.attempt()
+        else:
+            return False, explanation
+
+    def get_action(self):
+        return self.ai.get_action()
+
+
+class Person(Actor):
 
     def hear_announcement(self, action):
         self.ai.hear_announcement(action)
@@ -71,17 +109,6 @@ class Actor(game_object.Thing):
             out += "\n".join([i.get_name(viewer) for i in self.things])
         return out
 
-    def announce(self, action):
-        if getattr(action, "traverses_portals", False):
-            for loc in (action.target.location,
-                        action.target.opposite().location):
-                if loc:
-                    loc.broadcast_announcement(action)
-        elif self.location:
-            self.location.broadcast_announcement(action)
-        else:
-            pass
-
     def receive_text_message(self, text):
         pass
 
@@ -105,17 +132,12 @@ class Actor(game_object.Thing):
     def __repr__(self):
         return "Actor({})".format(self.name)
 
-    def vanish(self):
-        self.schedule.remove_actor(self)
-        super().vanish()
-
     def create_corpse(self):
-        corpse = game_object.Container(location=self.location,
-                                       name=self.name + "'s corpse",
-                                       other_names=[self.name + "s corpse",
-                                              "corpse",
-                                              self.name]
-                                       )
+        corpse = game_object.Container(
+            location=self.location,
+            name=self.name + "'s corpse",
+            other_names=[self.name + "s corpse", "corpse", self.name]
+        )
         corpse.traits.add("corpse")
         corpse.owner = self
         for item in set(self.things):
@@ -139,9 +161,6 @@ class Actor(game_object.Thing):
         self.location.show_text_to_hero(self.name + " wakes up.")
         self.awake = True
         self.cancel_actions()
-
-    def cancel_actions(self):
-        self.schedule.cancel_actions(self)
 
     def die(self, damage_ammount=0, damage_type=None):
         self.create_corpse()
@@ -177,6 +196,9 @@ class Actor(game_object.Thing):
             return modifier
         return triangular(0, 80) + modifier
 
+    def set_timer(self, time, keyword):
+        self.schedule.set_timer(self, time, keyword)
+
     def set_body_timer(self):
         self.schedule.set_timer(self, 500, "body update")
 
@@ -189,10 +211,6 @@ class Actor(game_object.Thing):
 
     def set_routine(self, routine):
         self.ai.set_routine(routine)
-
-    def special_actor_effects(self, action):
-        debug("Special actor effects performed")
-        return True, ""
 
     def can_reach(self, target):
         if self.has_thing(target):
@@ -232,23 +250,12 @@ class Actor(game_object.Thing):
                 self.ai.display("You fail to parry " + name)
         return super().be_targeted(action)
 
-    def receive_action_feedback(self, success, string):
-        pass
-
     def find_portal_facing_direction(self, direction):
         for portal in self.location.things_with_trait("portal"):
             if portal.get_relative_direction(self) == direction:
                 return portal
         else:
             raise errors.PortalNotFound
-
-    def perform_action(self, action):
-        action_ok, explanation = self.special_actor_effects(action)
-        if action_ok:
-            # If the action is allowed, lets the action instance do its thing.
-            return action.attempt()
-        else:
-            return False, explanation
 
     def get_targets_from_name(self, name, kind="TARGET"):
         if kind == "TARGET":
@@ -271,9 +278,6 @@ class Actor(game_object.Thing):
     def spend_time(self, time_spent):
         pass
 
-    def get_action(self):
-        return self.ai.get_action()
-
     def agrees_to(self, own_action):
         assert own_action.actor == self
         return self.ai.agrees_to(own_action)
@@ -285,28 +289,28 @@ class Actor(game_object.Thing):
         return "attack", "examine"
 
 
-class WaitingActor(Actor):
+class WaitingActor(Person):
     def __init__(self, *args, **kwargs):
-        Actor.__init__(self, *args, **kwargs)
+        Person.__init__(self, *args, **kwargs)
         self.ai = ai.AI(self)
 
 
-class Prisoner(Actor):
+class Prisoner(Person):
     def __init__(self, *args, **kwargs):
-        Actor.__init__(self, *args, **kwargs)
+        Person.__init__(self, *args, **kwargs)
         self.ai = ai.PrisonerAI(self)
 
 
-class KoboldActor(Actor):
+class KoboldActor(Person):
     def __init__(self, *args, **kwargs):
-        Actor.__init__(self, *args, **kwargs)
+        Person.__init__(self, *args, **kwargs)
         self.ai = ai.KoboldAI(self)
         self.traits.add("kobold")
 
 
-class Hero(Actor):
+class Hero(Person):
     def __init__(self, *args, **kwargs):
-        Actor.__init__(self, *args, **kwargs)
+        Person.__init__(self, *args, **kwargs)
         self.traits.add("hero")
         self.ai = parsing.Parser(self)
         self.visited_locations = set()

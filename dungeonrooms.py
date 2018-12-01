@@ -5,7 +5,7 @@ from random import choice
 import logging
 from action import Eat
 from errors import NotEnoughNodes, MissingNode
-from actor import Actor
+from actor import Person
 from ai import WanderingMonsterAI
 import parsetemplate
 # logging.basicConfig(level=logging.DEBUG,format='%(message)s')
