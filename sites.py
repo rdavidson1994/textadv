@@ -95,9 +95,9 @@ class KoboldHabitation(Habitation):
         def get_creature(self, location=None, adjective=None):
             name = game_object.Name(a=["kobold", "leader"],
                                     n=["leader", "kobold"])
-            boss = actor.Actor(location=location,
-                               name=name,
-                               sched=self.schedule)
+            boss = actor.Person(location=location,
+                                name=name,
+                                sched=self.schedule)
             boss.combat_skill = 75
             boss.ai = ai.WanderingMonsterAI(boss)
             spear = game_object.Item(location=boss,
@@ -117,7 +117,7 @@ class GhoulHabitation(Habitation):
 
         def get_creature(self, location=None):
             name = game_object.Name(self.get_adjective(), "ghoul")
-            ghoul = actor.Actor(location, name=name, sched=self.schedule)
+            ghoul = actor.Person(location, name=name, sched=self.schedule)
             ai.WanderingMonsterAI(ghoul)
             ghoul.body = body.UndeadBody(ghoul)
             ghoul.combat_skill = 60

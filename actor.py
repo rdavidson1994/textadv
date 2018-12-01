@@ -10,16 +10,11 @@ from game_object import Name
 
 
 class Actor(game_object.Thing):
-
     def __init__(self, *args, **kwargs):
-        game_object.Thing.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.traits.update({"actor", "listener"})
         self.scheduled_event = None
         self.ai = None
-        self.awake = True
-        self.combat_skill = 50
-        self.known_landmarks = set()
-        self.body = body.Body(self)
         self.actor_strategy_dict = dict()
         # self.action_queue = list()
         self.timer = 0
@@ -28,7 +23,6 @@ class Actor(game_object.Thing):
 
         self.schedule.add_actor(self)
         self.free_action = True
-        self.money = 0 # TODO: Abstract this out
 
     def attempt_action(self, action):
         # Many side effects! action.attempt later causes action.affect game
@@ -46,30 +40,30 @@ class Actor(game_object.Thing):
         else:
             return True, ""
 
-    def hear_announcement(self, action):
-        self.ai.hear_announcement(action)
+    def change_location(self, new_location, coordinates=None,
+                        keep_arranged=False):
+        # This is pretty slow! Probably don't do this
+        super().change_location(new_location, coordinates, keep_arranged)
+        for item in new_location.things:
+            if new_location.line_of_sight(self,item):
+                self.ai.see_thing(item)
 
-    def view_location(self):
-        self.ai.display(self.location.describe(self, full_text=True))
+    def vanish(self):
+        self.schedule.remove_actor(self)
+        super().vanish()
 
-    def is_hostile_to(self, other):
-        return self.ai.is_hostile_to(other)
+    def cancel_actions(self):
+        self.schedule.cancel_actions(self)
 
-    def get_name(self, viewer=None):
-        if viewer == self:
-            output = "you"
-        else:
-            output = super().get_name(viewer)
-        if not self.awake:
-            output += " (unconscious)"
-        return output
+    def set_routine(self, routine):
+        self.ai.set_routine(routine)
 
-    def get_look_text(self, viewer=None):
-        out = super().get_look_text()
-        if self.things:
-            out += "\nInventory:\n"
-            out += "\n".join([i.get_name(viewer) for i in self.things])
-        return out
+    def special_actor_effects(self, action):
+        debug("Special actor effects performed")
+        return True, ""
+
+    def receive_action_feedback(self, success, string):
+        pass
 
     def announce(self, action):
         if getattr(action, "traverses_portals", False):
@@ -82,16 +76,35 @@ class Actor(game_object.Thing):
         else:
             pass
 
+
+class Person(Actor):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.awake = True
+        self.combat_skill = 50
+        self.known_landmarks = set()
+        self.body = body.Body(self)
+        self.money = 0  # TODO: Abstract this out
+
+    def hear_announcement(self, action):
+        self.ai.hear_announcement(action)
+
+    def view_location(self):
+        self.ai.display(self.location.describe(self, full_text=True))
+
+    def is_hostile_to(self, other):
+        return self.ai.is_hostile_to(other)
+
+    def get_look_text(self, viewer=None):
+        out = super().get_look_text()
+        if self.things:
+            out += "\nInventory:\n"
+            out += "\n".join([i.get_name(viewer) for i in self.things])
+        return out
+
     def receive_text_message(self, text):
         pass
-
-    def change_location(self, new_location, coordinates=None,
-                        keep_arranged=False):
-        # This is pretty slow! Probably don't do this
-        super().change_location(new_location, coordinates, keep_arranged)
-        for item in new_location.things:
-            if new_location.line_of_sight(self,item):
-                self.ai.see_thing(item)
 
     def take_damage(self, amt, damage_type):
         self.body.take_damage(amt, damage_type)
@@ -103,11 +116,7 @@ class Actor(game_object.Thing):
         self.body.take_ko(amt)
 
     def __repr__(self):
-        return "Actor({})".format(self.name)
-
-    def vanish(self):
-        self.schedule.remove_actor(self)
-        super().vanish()
+        return "Person({})".format(self.name)
 
     def create_corpse(self):
         corpse = game_object.Container(location=self.location,
@@ -129,9 +138,11 @@ class Actor(game_object.Thing):
                          name=Name(adjectives,
                              "head"))
 
-    def pass_out(self):
+    def pass_out(self, show_message=True):
         if self.awake:
-            self.location.show_text_to_hero(self.name + " falls unconscious.")
+            if show_message:
+                message = self.name + " falls unconscious."
+                self.location.show_text_to_hero(message)
             self.awake = False
             self.cancel_actions()
 
@@ -140,13 +151,11 @@ class Actor(game_object.Thing):
         self.awake = True
         self.cancel_actions()
 
-    def cancel_actions(self):
-        self.schedule.cancel_actions(self)
-
-    def die(self, damage_ammount=0, damage_type=None):
+    def die(self, damage_amount=0, damage_type=None):
+        self.pass_out(show_message=False)
         self.create_corpse()
         if damage_type == "sharp":
-            if damage_ammount >= 80 and random() > 0.5:
+            if damage_amount >= 80 and random() > 0.5:
                 text = self.name + " is decapitated."
                 self.create_head()
             else:
@@ -187,13 +196,6 @@ class Actor(game_object.Thing):
     def is_hero(self):
         return False
 
-    def set_routine(self, routine):
-        self.ai.set_routine(routine)
-
-    def special_actor_effects(self, action):
-        debug("Special actor effects performed")
-        return True, ""
-
     def can_reach(self, target):
         if self.has_thing(target):
             return True
@@ -231,9 +233,6 @@ class Actor(game_object.Thing):
                 self.body.take_fatigue(9)
                 self.ai.display("You fail to parry " + name)
         return super().be_targeted(action)
-
-    def receive_action_feedback(self, success, string):
-        pass
 
     def find_portal_facing_direction(self, direction):
         for portal in self.location.things_with_trait("portal"):
@@ -284,29 +283,38 @@ class Actor(game_object.Thing):
     def get_suggested_verbs(self):
         return "attack", "examine"
 
+    def get_name(self, viewer=None):
+        if viewer == self:
+            output = "you"
+        else:
+            output = super().get_name(viewer)
+        if not self.awake:
+            output += " (unconscious)"
+        return output
 
-class WaitingActor(Actor):
+
+class WaitingActor(Person):
     def __init__(self, *args, **kwargs):
-        Actor.__init__(self, *args, **kwargs)
+        Person.__init__(self, *args, **kwargs)
         self.ai = ai.AI(self)
 
 
-class Prisoner(Actor):
+class Prisoner(Person):
     def __init__(self, *args, **kwargs):
-        Actor.__init__(self, *args, **kwargs)
+        Person.__init__(self, *args, **kwargs)
         self.ai = ai.PrisonerAI(self)
 
 
-class KoboldActor(Actor):
+class KoboldActor(Person):
     def __init__(self, *args, **kwargs):
-        Actor.__init__(self, *args, **kwargs)
+        Person.__init__(self, *args, **kwargs)
         self.ai = ai.KoboldAI(self)
         self.traits.add("kobold")
 
 
-class Hero(Actor):
+class Hero(Person):
     def __init__(self, *args, **kwargs):
-        Actor.__init__(self, *args, **kwargs)
+        Person.__init__(self, *args, **kwargs)
         self.traits.add("hero")
         self.ai = parsing.Parser(self)
         self.visited_locations = set()

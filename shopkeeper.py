@@ -70,7 +70,7 @@ class ShopkeeperAI(ai.PeacefulAI):
         super().hear_announcement(act)
             
 
-class Actor(actor.Actor):
+class Person(actor.Person):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ai = ShopkeeperAI(self)
@@ -84,7 +84,7 @@ if __name__ == "__main__":
                                sched=test.schedule)
 
     """
-    shopkeeper = Actor(name="shopkeeper",
+    shopkeeper = Person(name="shopkeeper",
                                  location=test.house,
                                  sched=test.schedule, )
     shopkeeper.money = 2000

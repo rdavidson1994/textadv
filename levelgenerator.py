@@ -431,7 +431,7 @@ class EmptyCaves(Caves):
 #         return actor.KoboldActor(location, name=name, sched=self.schedule)
 #
 #     def make_boss(self, location=None):
-#         boss = actor.Actor(location=location,
+#         boss = actor.Person(location=location,
 #                            names=["kobold leader", "leader", "kobold"],
 #                            sched=self.schedule)
 #         boss.combat_skill = 75
@@ -459,7 +459,7 @@ class EmptyTomb(Caves):
 #
 #     def make_enemy(self, location=None, adjective=""):
 #         name = Name(adjective, "ghoul")
-#         ghoul = actor.Actor(location, name=name, sched=self.schedule)
+#         ghoul = actor.Person(location, name=name, sched=self.schedule)
 #         ai.WanderingMonsterAI(ghoul)
 #         ghoul.body = body.UndeadBody(ghoul)
 #         ghoul.combat_skill = 60

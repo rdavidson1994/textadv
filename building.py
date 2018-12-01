@@ -13,7 +13,7 @@ class Shop(Building):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         name = Name(n=[NameMaker().create_word(), "shopkeeper"])
-        self.shopkeeper = shopkeeper.Actor(name=name, location=self)
+        self.shopkeeper = shopkeeper.Person(name=name, location=self)
 
 
 class WeaponShop(Shop):

@@ -37,7 +37,7 @@ door = game_object.Portal(locations=[plains, house],
 
 john = actor.Hero(plains, name="john", sched=my_schedule)
 my_parser = john.ai
-joe = actor.Actor(plains, name="joe", sched=my_schedule)
+joe = actor.Person(plains, name="joe", sched=my_schedule)
 joe.ai = ai.WanderingMonsterAI(joe)
 
 quit_phrase = phrase.QuitPhrase(my_parser, ["quit", "exit"])

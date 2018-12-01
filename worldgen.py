@@ -50,6 +50,7 @@ class DemoContext(Context):
             self.add_agent(town)
 
 
+
 class Agent:
     civilized = False
 
