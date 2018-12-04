@@ -23,10 +23,6 @@ class Actor(game_object.Thing):
 
         self.schedule.add_actor(self)
         self.free_action = True
-<<<<<<< HEAD
-=======
-        self.money = 0  # TODO: Abstract this out
->>>>>>> 57dc2cb13f41b031f39e621cc4b6f1671a1fcc7b
 
     def attempt_action(self, action):
         # Many side effects! action.attempt later causes action.affect game
@@ -44,7 +40,6 @@ class Actor(game_object.Thing):
         else:
             return True, ""
 
-<<<<<<< HEAD
     def change_location(self, new_location, coordinates=None,
                         keep_arranged=False):
         # This is pretty slow! Probably don't do this
@@ -52,49 +47,6 @@ class Actor(game_object.Thing):
         for item in new_location.things:
             if new_location.line_of_sight(self,item):
                 self.ai.see_thing(item)
-=======
-    def announce(self, action):
-        if getattr(action, "traverses_portals", False):
-            for loc in (action.target.location,
-                        action.target.opposite().location):
-                if loc:
-                    loc.broadcast_announcement(action)
-        elif self.location:
-            self.location.broadcast_announcement(action)
-        else:
-            pass
-
-    def vanish(self):
-        self.schedule.remove_actor(self)
-        super().vanish()
-
-    def cancel_actions(self):
-        self.schedule.cancel_actions(self)
-
-    def special_actor_effects(self, action):
-        debug("Special actor effects performed")
-        return True, ""
-
-    def receive_action_feedback(self, success, string):
-        pass
-
-    def perform_action(self, action):
-        action_ok, explanation = self.special_actor_effects(action)
-        if action_ok:
-            # If the action is allowed, lets the action instance do its thing.
-            return action.attempt()
-        else:
-            return False, explanation
-
-    def get_action(self):
-        return self.ai.get_action()
-
-
-class Person(Actor):
-
-    def hear_announcement(self, action):
-        self.ai.hear_announcement(action)
->>>>>>> 57dc2cb13f41b031f39e621cc4b6f1671a1fcc7b
 
     def vanish(self):
         self.schedule.remove_actor(self)
@@ -113,7 +65,6 @@ class Person(Actor):
     def receive_action_feedback(self, success, string):
         pass
 
-<<<<<<< HEAD
     def announce(self, action):
         if getattr(action, "traverses_portals", False):
             for loc in (action.target.location,
@@ -124,6 +75,9 @@ class Person(Actor):
             self.location.broadcast_announcement(action)
         else:
             pass
+
+    def get_action(self):
+        return self.ai.get_action()
 
 
 class Person(Actor):
@@ -152,8 +106,6 @@ class Person(Actor):
             out += "\n".join([i.get_name(viewer) for i in self.things])
         return out
 
-=======
->>>>>>> 57dc2cb13f41b031f39e621cc4b6f1671a1fcc7b
     def receive_text_message(self, text):
         pass
 
@@ -167,11 +119,7 @@ class Person(Actor):
         self.body.take_ko(amt)
 
     def __repr__(self):
-<<<<<<< HEAD
         return "Person({})".format(self.name)
-=======
-        return "Actor({})".format(self.name)
->>>>>>> 57dc2cb13f41b031f39e621cc4b6f1671a1fcc7b
 
     def create_corpse(self):
         corpse = game_object.Container(
@@ -205,12 +153,8 @@ class Person(Actor):
         self.awake = True
         self.cancel_actions()
 
-<<<<<<< HEAD
     def die(self, damage_amount=0, damage_type=None):
         self.pass_out(show_message=False)
-=======
-    def die(self, damage_ammount=0, damage_type=None):
->>>>>>> 57dc2cb13f41b031f39e621cc4b6f1671a1fcc7b
         self.create_corpse()
         if damage_type == "sharp":
             if damage_amount >= 80 and random() > 0.5:
@@ -257,12 +201,6 @@ class Person(Actor):
     def is_hero(self):
         return False
 
-<<<<<<< HEAD
-=======
-    def set_routine(self, routine):
-        self.ai.set_routine(routine)
-
->>>>>>> 57dc2cb13f41b031f39e621cc4b6f1671a1fcc7b
     def can_reach(self, target):
         if self.has_thing(target):
             return True
