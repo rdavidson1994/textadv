@@ -1,3 +1,5 @@
+from full_path import full_path
+
 def make_csv(file_name):
     with open(file_name) as file:
         new_lines = []
@@ -11,4 +13,4 @@ def make_csv(file_name):
 
 if __name__ == "__main__":
     for file_name in ["onset.txt", "nucleus.txt", "coda.txt"]:
-        make_csv(file_name)
+        make_csv(full_path(file_name))

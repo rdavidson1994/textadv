@@ -7,11 +7,11 @@ import actor
 import schedule
 import building
 import sites
-from wide import WideLocation
-
+from wide import Location
 use_web_output = ("web" in sys.argv)
 
-plains = WideLocation(description="You stand in a grassy field")
+plains = Location(description="You stand in a grassy field")
+
 my_schedule = schedule.Schedule()
 caves_portal = game_object.PortalEdge.free_portal(location=plains,
                                                   direction=d,
@@ -35,6 +35,8 @@ weapon_shop = building.WeaponShop(town, sched=my_schedule)
 town_landmark = town_portal.source.create_landmark(name=town_name)
 
 john = actor.Hero(plains, name="john", sched=my_schedule, coordinates=(15, 15))
+my_parser = john.ai
+my_parser.web_output = use_web_output
 john.view_location()
 john.known_landmarks = {town_landmark, caves_landmark}
 john.spells_known = {spells.Shock, spells.Fireball}
@@ -46,8 +48,6 @@ sword = game_object.Item(location=john,
                          )
 sword.damage_type = "sharp"
 sword.damage_mult = 3
-my_parser = john.ai
-my_parser.web_output = use_web_output
 quit_phrase = phrase.QuitPhrase(my_parser, ["quit", "exit"])
 inventory_phrase = phrase.InventoryPhrase(my_parser, ["i", "inventory"])
 my_schedule.run_game()

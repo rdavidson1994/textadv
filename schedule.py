@@ -151,11 +151,11 @@ class Schedule:
             raise ScheduleError
         elif self.end_game == False and actor in self.actors:
             action = actor.get_action()
-            new_event = ActionEvent(action)
+            ActionEvent(action)
         else:
             self.new_stopped_actors.append(actor)
 
-    def run_game(self, duration = None):
+    def run_game(self, duration=None):
         if duration is not None:
             end_time = self.current_time + duration
         else:

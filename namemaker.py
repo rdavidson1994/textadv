@@ -1,4 +1,5 @@
 import random
+from full_path import full_path
 
 class NameMaker:
     syllable_choices = {1: 2, 2: 8, 3: 3, 4: 1}
@@ -26,16 +27,17 @@ class NameMaker:
     def read(self, file_name):
         out_dict = {}
         comment = False
-        for line in open(file_name):
-            line = line.partition("#")[0]
-            line = line.rstrip()
-            if line == "/*":
-                comment = True
-            elif line == "*/":
-                comment = False
-            elif not comment:
-                lst = line.split(",")
-                out_dict[lst[0]] = float(lst[1].strip())
+        with open(full_path(file_name)) as f:
+            for line in f:
+                line = line.partition("#")[0]
+                line = line.rstrip()
+                if line == "/*":
+                    comment = True
+                elif line == "*/":
+                    comment = False
+                elif not comment:
+                    lst = line.split(",")
+                    out_dict[lst[0]] = float(lst[1].strip())
         return out_dict
 
     def create_word(self, syllables=None):

@@ -1,5 +1,6 @@
 import re
 import textwrap
+from full_path import full_path
 
 
 class TemplateParser:
@@ -105,7 +106,7 @@ class TemplateParser:
 
 
 class RoomTemplateParser(TemplateParser):
-    with open("room_descriptions.txt") as f:
+    with open(full_path("room_descriptions.txt")) as f:
         file_text = f.read()
     templates = file_text.split("@")
     templates.remove("")

@@ -25,7 +25,13 @@ class Parser(AI):
         # self.display_queue.append(display_string)
         if display_string != "SILENCE":
             output = display_string  # .capitalize()
-            print(output)
+            if self.web_output:
+                modified_output = output.replace("\n", "<br />\n")
+                print(modified_output, end="<br />\n")
+            else:
+                print("NOT USING WEB")
+                print(output)
+            
 
     def close(self):
         self.end_game = True

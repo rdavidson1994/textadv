@@ -4,7 +4,7 @@ import random
 # logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
 
-class WideLocation(game_object.Location):
+class Location(game_object.Location):
     view_distance = 10
     width = 30
     height = 30

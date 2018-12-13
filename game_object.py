@@ -5,6 +5,7 @@ import logging
 import re
 import direction
 from random import choice
+from menu_wrap import menu_wrap
 
 debug = logging.debug
 
@@ -303,19 +304,22 @@ class Thing:
         return "take", "examine"
 
     def menu_wrap(self, text):
+        '''
         # TODO: Do this in any other way. Anything is better. Please.
         dropdown = '<div class="dropdown">'
-        button = '<button onclick="displayDropdown(this)" class="dropbtn">'
+        button = '<button class="dropbtn">'
         button_end = '</button>'
         content = '<div id="myDropdown" class="dropdown-content">'
-        link = ('<button type="button",'
-                ' onclick="sendText(\'{verb} {text}\')">{verb}</button>')
+        link = ('<button type="button" class="dropdown-option"'
+                ' data-text="{verb} {text}">{verb}</button>')
         div_end = '</div>'
         strings = [dropdown, button, text, button_end, content]
         for verb in self.get_suggested_verbs():
             strings.append(link.format(verb=verb, text=text))
         strings += [div_end, div_end]
         return "".join(strings)
+        '''
+        return menu_wrap(text, self.get_suggested_verbs())
 
     def get_look_text(self, viewer=None):
         return self.get_name(viewer)

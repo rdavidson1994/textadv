@@ -176,8 +176,12 @@ class Action(metaclass=ActionMeta):
             return
 
         self.succeed()
-        self.actor.body.take_fatigue(self.stamina_cost)
-        self.actor.body.lose_mana(self.mana_cost)
+        try:
+            body = self.actor.body
+            body.take_fatigue(self.stamina_cost)
+            body.lose_mana(self.mana_cost)
+        except AttributeError:
+            pass
 
     def succeed(self):
         feedback = self.get_success_string(self.actor)
@@ -323,6 +327,12 @@ class Verbose(DetailAction):
 class Diagnose(DetailAction):
     synonyms = ["diagnose", "health", "diagnostic", "hp", "h", "damage",
                 "fatigue", "stamina", "mana", ]
+
+    def check_geometry(self):
+        if hasattr(self.actor, "body"):
+            return super().check_geometry()
+        else:
+            return "False", "You don't have a physical body."
 
     def get_success_string(self, viewer=None):
         return self.actor.body.get_health_report()
