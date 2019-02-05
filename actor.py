@@ -12,6 +12,7 @@ from game_object import Name
 class Actor(game_object.Thing):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.awake = True
         self.traits.update({"actor", "listener"})
         self.scheduled_event = None
         self.ai = None
@@ -26,13 +27,12 @@ class Actor(game_object.Thing):
 
     def attempt_action(self, action):
         # Many side effects! action.attempt later causes action.affect game
-        assert action.actor == self # Can't attempt another's action
+        assert action.actor == self  # Can't attempt another's action
         valid, explanation = action.is_valid()
         if valid:
             action.attempt()
         else:
             self.receive_action_feedback(False, explanation)
-            print("Invalid action stopped")
 
     def final_action_check(self, action):
         if action.is_social:
@@ -79,12 +79,20 @@ class Actor(game_object.Thing):
     def get_action(self):
         return self.ai.get_action()
 
+    def receive_text_message(self, text):
+        pass
+
+    def set_timer(self, time, keyword):
+        self.schedule.set_timer(self, time, keyword)
+
+    def hear_timer(self, keyword):
+        pass
+
 
 class Person(Actor):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.awake = True
         self.combat_skill = 50
         self.known_landmarks = set()
         self.body = body.Body(self)
@@ -105,9 +113,6 @@ class Person(Actor):
             out += "\nInventory:\n"
             out += "\n".join([i.get_name(viewer) for i in self.things])
         return out
-
-    def receive_text_message(self, text):
-        pass
 
     def take_damage(self, amt, damage_type):
         self.body.take_damage(amt, damage_type)
@@ -147,6 +152,12 @@ class Person(Actor):
                 self.location.show_text_to_hero(message)
             self.awake = False
             self.cancel_actions()
+
+    def hear_timer(self, keyword):
+        if keyword == "body update":
+            self.body.update()
+        else:
+            super().hear_timer(keyword)
 
     def wake_up(self):
         self.location.show_text_to_hero(self.name + " wakes up.")
@@ -188,15 +199,8 @@ class Person(Actor):
             return modifier
         return triangular(0, 80) + modifier
 
-    def set_timer(self, time, keyword):
-        self.schedule.set_timer(self, time, keyword)
-
     def set_body_timer(self):
         self.schedule.set_timer(self, 500, "body update")
-
-    def hear_timer(self, keyword):
-        if keyword == "body update":
-            self.body.update()
 
     def is_hero(self):
         return False

@@ -205,7 +205,7 @@ class KoboldAI(AI):
             # If you see a corpse, stop looking for its owner
             owner = getattr(thing, "owner", None)
             if owner in self.enemies:
-                self.enemies.pop(thing)
+                self.enemies.pop(owner)
 
     class Rally(Routine, ZeroTargetAction):
         class WalkToRallyRoutine(DestinationRoutine):

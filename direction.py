@@ -7,6 +7,15 @@ class Direction:
             self.opposite = opposite
             opposite.opposite = self
 
+    def __eq__(self, other):
+        try:
+            if self.name == other.name:
+                return True
+            else:
+                return False
+        except AttributeError:
+            return False
+
     def __str__(self):
         return self.name
 

@@ -854,9 +854,12 @@ class DurationWaitRoutine(Routine, ZeroTargetAction):
         super().__init__(*args, **kwargs)
 
     def get_local_action(self):
-        if self.expended_duration < self.duration:
+        if self.expended_duration < self.duration - 1:
             self.expended_duration += 1
             return Wait(self.actor)
+        elif self.expended_duration < self.duration:
+            self.expended_duration +=1
+            return LoudWait(self.actor)
         else:
             return None
 

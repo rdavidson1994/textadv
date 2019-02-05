@@ -2,15 +2,15 @@
 
 Make sure you have the latest python3 install. Then do this:
 
-py world.py
+```py world.py```
 
 If that didn't work, do this
 
-python3 world.py
+```python3 world.py```
 
 Example commands:
 
-'inventory' or 'i'
+```'inventory' or 'i'
 
 'map' or 'm'
 
@@ -31,4 +31,5 @@ Example commands:
 'wait for two minutes'
 
 'rest'
+```
 

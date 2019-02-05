@@ -2,6 +2,7 @@ import errors
 import phrase
 import string
 import re
+import json
 import action
 from ai import AI
 from logging import debug
@@ -29,7 +30,6 @@ class Parser(AI):
                 modified_output = output.replace("\n", "<br />\n")
                 print(modified_output, end="<br />\n")
             else:
-                print("NOT USING WEB")
                 print(output)
             
 
@@ -123,7 +123,7 @@ class Parser(AI):
                      self.last_interrupt_request != my_action,
                      text != "SILENCE",
                      not self.taking_hostile_action(),)
-            if (all(conds)):
+            if all(conds):
                 self_hostile = getattr(my_action, "is_hostile", False)
                 # we shouldn't ask to interrupt the player's attacks.
                 if not self_hostile and action.actor.is_hostile_to(self.actor):
@@ -132,12 +132,12 @@ class Parser(AI):
 
     def input(self):
         if self.web_output:
-            prompt = ""
+            prompt = json.dumps({"type": "output complete"})
         else:
             prompt = ">"
         output = input(prompt).lower()
-        for ch in string.punctuation:
-            output = output.replace(ch, "")
+        # for ch in string.punctuation:
+        #     output = output.replace(ch, "")
         output = output.replace(" the ", " ")
         return output
 

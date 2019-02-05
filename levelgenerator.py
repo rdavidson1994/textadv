@@ -36,10 +36,10 @@ class InfiniteDeck:
             raise StopIteration
 
 
-direction_vector = {n: Vector((0, 1)),
-                    s: Vector((0, -1)),
-                    e: Vector((1, 0)),
-                    w: Vector((-1, 0)), }
+direction_vector = {'n': Vector((0, 1)),
+                    's': Vector((0, -1)),
+                    'e': Vector((1, 0)),
+                    'w': Vector((-1, 0)), }
 
 
 class CreaturePolicy:
@@ -560,7 +560,7 @@ class Node:
         for d in outgoing_directions:
             if d in self.connected_directions:
                 pass
-            target_vector = self.vector + direction_vector[d]
+            target_vector = self.vector + direction_vector[d.letter]
             found_node = self.registry.node_with_vector(target_vector)
             if found_node:
                 found_con = self.registry.connection_with_endpoints(self, found_node)

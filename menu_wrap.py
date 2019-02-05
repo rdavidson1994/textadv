@@ -2,8 +2,8 @@ import yattag
 
 def menu_wrap(noun, verbs):
     doc, tag, text = yattag.Doc().tagtext()
-    with tag("a", klass="dropdown-container"):
-        with tag("button",  klass="dropdown-link"):
+    with tag("div", klass="dropdown-container"):
+        with tag("a",  klass="dropdown-link"):
             text(noun)
         with tag("div", klass="dropdown-menu"):
             for verb in verbs:
