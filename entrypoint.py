@@ -24,7 +24,6 @@ class SaveManager:
         with open(save_name, 'rb') as file:
             return pickle.load(file)
 
-
     def save(self, world):
         index = 0
         base_save_name = path.join(self.save_directory, "save")
@@ -40,9 +39,9 @@ class SaveManager:
 
         if args.web:
             outObject = {
-                "type":"save",
-                "status":"success",
-                "saveId":index,
+                "type": "save",
+                "status": "success",
+                "saveId": index,
             }
             print(json.dumps(outObject))
             return "SILENCE"
@@ -51,9 +50,10 @@ class SaveManager:
 
 
 if __name__ == "__main__":
-    save_directory = r"C:\Users\Rl\Desktop\textadv-saves"
+    save_directory = path.join(path.dirname(path.abspath(__file__)), "saves")
     parser = argparse.ArgumentParser()
-    parser.add_argument("-web", help="Enable html output.", action="store_true")
+    parser.add_argument("-web", help="Enable html output.",
+                        action="store_true")
     parser.add_argument("--save", help="Specify save game.")
     args = parser.parse_args()
 
