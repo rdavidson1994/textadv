@@ -1,0 +1,1 @@
+This directory exists to house saves, which are binary files containing pickle output saved as `.pkl`.
