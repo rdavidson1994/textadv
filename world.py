@@ -1,18 +1,12 @@
+import actor
+import building
 import game_object
 import phrase
-import sys
-from direction import n, s, e, w, u, d
-
-import spells
-import actor
 import schedule
-import building
 import sites
-from os import path
+import spells
+from direction import n, s, e, w, u, d
 from wide import Location
-import pickle
-
-
 
 
 class World:

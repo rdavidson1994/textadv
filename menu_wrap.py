@@ -1,16 +1,15 @@
-import yattag
+import json
+
+web_new_line = "WEBNEWLINE"
+
 
 def menu_wrap(noun, verbs):
-    doc, tag, text = yattag.Doc().tagtext()
-    with tag("div", klass="dropdown-container"):
-        with tag("a",  klass="dropdown-link"):
-            text(noun)
-        with tag("div", klass="dropdown-menu"):
-            for verb in verbs:
-                with tag("button",
-                         type="button",
-                         klass="dropdown-option"):
-                    doc.attr(("data-text", verb+" "+noun))
-                    text(verb)
-    return doc.getvalue()
-
+    json_object = {
+        "type": "dropdown",
+        "label": noun,
+        "options": [
+            {"label": verb, "input": verb+" "+noun}
+            for verb in verbs
+        ],
+    }
+    return web_new_line+json.dumps(json_object)+web_new_line

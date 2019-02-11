@@ -1,4 +1,5 @@
 import errors
+import menu_wrap
 import phrase
 import string
 import re
@@ -27,11 +28,11 @@ class Parser(AI):
         if display_string != "SILENCE":
             output = display_string  # .capitalize()
             if self.web_output:
-                modified_output = output.replace("\n", "<br />\n")
-                print(modified_output, end="<br />\n")
+                output = output.replace("\n", "<br />\n")
+                output = output.replace(menu_wrap.web_new_line, "\n")
+                print(output, end="<br />\n")
             else:
                 print(output)
-            
 
     def close(self):
         self.end_game = True
@@ -132,7 +133,7 @@ class Parser(AI):
 
     def input(self):
         if self.web_output:
-            prompt = json.dumps({"type": "output complete"})
+            prompt = json.dumps({"type": "output complete"})+"\n"
         else:
             prompt = ">"
         output = input(prompt).lower()
