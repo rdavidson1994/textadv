@@ -1,9 +1,5 @@
-from random import random, randint, choice, sample, randrange, shuffle
-from game_object import Location, PortalEdge, Item, Name
-from errors import NotEnoughNodes, MissingNode
-from direction import n, s, e, w
-from math import sqrt
-from itertools import chain
+from random import random, randint, sample, shuffle
+from direction import north, south, east, west
 import spells
 from vector import Vector
 from dungeonrooms import *  # TODO: Fix this when you get home
@@ -11,15 +7,13 @@ import logging
 # these below imports are for testing
 import schedule
 import actor
-import ai
 import phrase
-import body
-import parsing
+
 debug = logging.debug
 logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
 # import matplotlib.pyplot as plt
-directions = [n, s, e, w]
+directions = [north, south, east, west]
 
 
 class InfiniteDeck:

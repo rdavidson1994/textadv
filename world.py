@@ -1,18 +1,19 @@
 import actor
 import building
 import game_object
+import name_object
 import phrase
 import schedule
 import sites
 import spells
-from direction import n, s, e, w, u, d
+from direction import north, south, east, west, up, down
 from wide import Location
 
 
 class World:
 
     def __init__(self, use_web_output = False, save_manager=None):
-        self.directions = [n,s,e,w,u,d]
+        self.directions = [north, south, east, west, up, down]
         self.save_manager = save_manager
 
         plains = Location(description="You stand in a grassy field")
@@ -20,15 +21,17 @@ class World:
         my_schedule = schedule.Schedule()
         caves_portal = game_object.PortalEdge.free_portal(
             location=plains,
-            direction=d,
-            coordinates=(15,14),
-            name="ladder"
+            direction=down,
+            coordinates=(15, 14),
+            name="ladder",
         )
-        cave_site = sites.Cave(sched=my_schedule,
-                               entrance_portal=caves_portal.target)
+        cave_site = sites.Cave(
+            sched=my_schedule,
+            entrance_portal=caves_portal.target
+        )
         cave_site.add_morph(sites.KoboldHabitation())
         cave_site.update_region()
-        caves_name = game_object.Name(a="kobold", n=["cave", "caves"])
+        caves_name = name_object.Name(a="kobold", n=["cave", "caves"])
         caves_landmark = caves_portal.source.create_landmark(name=caves_name)
 
         town = game_object.Location(
@@ -37,12 +40,12 @@ class World:
         )
         town_portal = game_object.PortalEdge.free_portal(
             location=plains,
-            direction=n,
+            direction=north,
             coordinates=(25,10),
             name="gate"
         )
         town_portal.set_target_location(town)
-        town_name = game_object.Name("big", "town")
+        town_name = name_object.Name("big", "town")
         building.WeaponShop(town, sched=my_schedule)
         town_landmark = town_portal.source.create_landmark(name=town_name)
         john = actor.Hero(
@@ -60,7 +63,7 @@ class World:
         john.body.mana = 50
         sword = game_object.Item(
             location=john,
-            name=game_object.Name(
+            name=name_object.Name(
                 a=["iron", "long"],
                 n=["longsword", "sword"]
             ),

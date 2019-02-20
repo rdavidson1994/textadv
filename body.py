@@ -11,6 +11,7 @@ except ImportError:
 
 class Body:
     bleeds = True
+
     def __init__(self, owner):
         self.owner = owner
         self.short_fatigue = 0
@@ -140,7 +141,7 @@ class Body:
     def inv_ko_cdf(self, alpha):
         # Very, very, inefficient empirical approach
         sample_size = 20000
-        sample = [self.get_ko_cutoff() for i in range(sample_size)]
+        sample = [self.get_ko_cutoff() for _ in range(sample_size)]
         sample.sort()
         rank = int(sample_size * alpha)
         percentile = sample[rank]
@@ -149,9 +150,12 @@ class Body:
         else:
             return percentile
 
+
 class UndeadBody(Body):
     bleeds = False
+
     def take_fatigue(self, *args, **kwargs):
         pass
+
     def take_ko(self, *args, **kwargs):
-        self.die(0,None)
+        self.die(0, None)

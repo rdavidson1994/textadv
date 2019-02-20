@@ -1,4 +1,5 @@
-from game_object import Location, Item, Thing, FoodItem, Cage, Name, PortalEdge, Landmark
+from game_object import Location, Item, Thing, FoodItem, Cage, PortalEdge, Landmark
+from name_object import Name
 from actor import Prisoner
 from namemaker import NameMaker
 from random import choice

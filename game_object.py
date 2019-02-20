@@ -1,8 +1,7 @@
 import errors
-from math import sqrt
-from verb import group_from_list as gfl
+
+from name_object import Name
 import logging
-import re
 import direction
 from random import choice
 from menu_wrap import menu_wrap
@@ -12,59 +11,10 @@ debug = logging.debug
 
 # logging.basicConfig(level=logging.WARNING,format='%(message)s')
 
-class Name:
-    @staticmethod
-    def wrap_if_str(possible_str):
-        if isinstance(possible_str, str):
-            return [possible_str]
-        else:
-            return list(possible_str)
-
-    @staticmethod
-    def sequence_regex(*seq):
-        group_seq = [gfl(i) for i in seq]
-        group_str = " ".join(group_seq)
-        strict_str = "^" + group_str + "$"
-        return re.compile(strict_str)
-
-    def __init__(self,
-                 a=(),
-                 n=(),
-                 has_article=False,
-                 display_name=None):
-        self.nouns = self.wrap_if_str(n)
-        self.adjectives = self.wrap_if_str(a)
-        self.has_article = has_article
-        self.display_name = display_name
-        noun_regex = self.sequence_regex(self.nouns)
-        if a:
-            adjective_regex = self.sequence_regex(self.adjectives)
-            full_regex = self.sequence_regex(self.adjectives, self.nouns)
-            self.regex_list = [noun_regex, adjective_regex, full_regex]
-        else:
-            self.regex_list = [noun_regex]
-
-    def get_text(self, viewer=None, use_article=False):
-        if self.display_name:
-            return self.display_name
-        elif self.adjectives:
-            return self.adjectives[0] + " " + self.nouns[0]
-        else:
-            return self.nouns[0]
-        
-    def matches(self, text):
-        for regex in self.regex_list:
-            if regex.match(text):
-                return True
-            else:
-                continue
-        else:
-            return False
-
 
 class Landmark:
     def __init__(self, name, location=None, coordinates=None, basis=None):
-        self.name = name
+        self.name = Name.accept_string(name)
         if basis:
             self.location = basis.location
             self.coordinates = basis.coordinates
@@ -448,11 +398,14 @@ class PortalVertex(Thing):
     def get_coordinates(self, viewing_location):
         return self.coordinates
 
-    def get_name(self, viewer):
+    def get_name(self, viewer=None):
         """Returns a name appropriate to the viewing actor.
         """
-        direction = self.get_relative_direction(viewer)
-        return self.name + " facing " + str(direction)
+        if viewer:
+            direction = self.get_relative_direction(viewer)
+            return self.name + " facing " + str(direction)
+        else:
+            return self.name
 
     def be_targeted(self, action):
         debug("Portal target effects called")
@@ -485,36 +438,42 @@ class PortalVertex(Thing):
     
 
 class PortalEdge:
-    def __init__(self,
-                 locations=(None, None),
-                 directions=(None, None),
-                 key=None,
-                 locked=False,
-                 coordinate_pairs=(None, None),
-                 name_pair=("",""),
-                 name = "",
-                 *args,
-                 **kwargs):
+    def __init__(
+        self,
+        locations=(None, None),
+        directions=(None, None),
+        key=None,
+        locked=False,
+        coordinate_pairs=(None, None),
+        name_pair=("", ""),
+        name="",
+        *args,
+        **kwargs
+    ):
         self.source_loc, self.target_loc = locations
         self.source_coords, self.target_coords = coordinate_pairs
         self.source_direction, self.target_direction = directions
-        # This avoids duplication and keeps to PEP 8...
-        # But it looks like an E E Cummings poem so, it's probably bad.
+
         if name != "":
             name_pair = (name, name)
             
-        self.vertices = [PortalVertex(edge=self,
-                                      direction=direct,
-                                      location=loc,
-                                      coordinates=pair,
-                                      name=nm,
-                                      *args, **kwargs)
-                         for loc, pair, direct, nm
-                         in zip(locations,
-                                coordinate_pairs,
-                                directions,
-                                name_pair)
-                         ]
+        self.vertices = [
+            PortalVertex(
+                edge=self,
+                direction=direct,
+                location=loc,
+                coordinates=pair,
+                name=nm,
+                *args, **kwargs
+            )
+            for loc, pair, direct, nm
+            in zip(
+                locations,
+                coordinate_pairs,
+                directions,
+                name_pair
+            )
+        ]
         self.source, self.target = self.vertices
         if locked or key is not None:
             self.lock = Lock(key, locked)
@@ -540,7 +499,7 @@ class PortalEdge:
     def be_entered(self, actor):
         if actor.location == self.source.location:
             actor.change_location(self.target.location, self.target.coordinates)
-            actor.nearsest_portal = self.target
+            actor.nearest_portal = self.target
         elif actor.location == self.target.location:
             actor.change_location(self.source.location, self.source.coordinates)
             actor.nearest_portal = self.source
@@ -582,7 +541,7 @@ class Door(PortalEdge):
     def __init__(self, start, end, direct="random"):
         locations = (start, end)
         if direct == "random":
-            direct = choice(direction.direction_list)
+            direct = direction.random()
         directions = (direct.opposite, direct)
         name_pair = [
                          Name(

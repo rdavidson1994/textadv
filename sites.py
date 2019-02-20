@@ -3,24 +3,46 @@ import game_object
 import actor
 import ai
 import body
+import name_object
 from dungeonrooms import (TreasureRoom, Barracks, Kitchen, MeatChamber,
                           MessHall, Prison, Apothecary, BossQuarters, )
 from abc import ABC, abstractmethod
+from typing import Type
 
 
 class Site:
     def __init__(self, sched=None, entrance_portal=None):
         self.schedule = sched
+        if self.schedule is None:
+            self.schedule = entrance_portal.schedule
         self.morphs = []
         self.region = None
         self.entrance_portal = entrance_portal
         self.unused_morph_index = 0
+
+    @classmethod
+    def at_point(
+        cls, location, direction,
+        coordinates=None,
+        portal_type=game_object.PortalEdge,
+        landmark_name=None,
+        **kwargs
+    ):
+        portal = portal_type.free_portal(
+            location, direction, coordinates, **kwargs
+        )
+        schedule = location.schedule
+        output_site = cls(schedule, portal.target)
+        if landmark_name:
+            output_site.landmark = portal.source.create_landmark(landmark_name)
+        return output_site
 
     def construct_base_region(self):
         raise NotImplementedError
 
     def add_morph(self, new_morph):
         self.morphs.append(new_morph)
+        return self
 
     def unused_morphs(self):
         return self.morphs[self.unused_morph_index:]
@@ -93,15 +115,15 @@ class KoboldHabitation(Habitation):
 
     class BossPolicy(levelgenerator.CreaturePolicy):
         def get_creature(self, location=None, adjective=None):
-            name = game_object.Name(a=["kobold", "leader"],
-                                    n=["leader", "kobold"])
+            name = name_object.Name(a=["kobold", "leader"],
+                             n=["leader", "kobold"])
             boss = actor.Person(location=location,
                                 name=name,
                                 sched=self.schedule)
             boss.combat_skill = 75
             boss.ai = ai.WanderingMonsterAI(boss)
             spear = game_object.Item(location=boss,
-                                     name=game_object.Name("crude", "sword"))
+                                     name=name_object.Name("crude", "sword"))
             spear.damage_type = "sharp"
             spear.damage_mult = 3
             return boss
@@ -116,7 +138,7 @@ class GhoulHabitation(Habitation):
                       "filthy", "pale", "short", ]
 
         def get_creature(self, location=None):
-            name = game_object.Name(self.get_adjective(), "ghoul")
+            name = name_object.Name(self.get_adjective(), "ghoul")
             ghoul = actor.Person(location, name=name, sched=self.schedule)
             ai.WanderingMonsterAI(ghoul)
             ghoul.body = body.UndeadBody(ghoul)

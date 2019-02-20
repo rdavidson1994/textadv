@@ -1,7 +1,8 @@
 import game_object
+import name_object
 import shopkeeper
 from namemaker import NameMaker
-from game_object import Name
+from name_object import Name
 
 
 class Building(game_object.Location):
@@ -20,7 +21,7 @@ class Shop(Building):
 class WeaponShop(Shop):
     def __init__(self, *args, **kwargs):
         if "name" not in kwargs:
-            kwargs["name"] = game_object.Name("weapon", "shop")
+            kwargs["name"] = name_object.Name("weapon", "shop")
         super().__init__(*args, **kwargs)
         self.shopkeeper.money = 2000
 

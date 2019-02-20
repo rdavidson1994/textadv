@@ -8,7 +8,7 @@ import action
 import game_object
 import schedule
 import ai
-from direction import n,s,e,w,u,d
+from direction import north,south,east,west,up,down
 #logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
 my_schedule = schedule.Schedule()
@@ -31,7 +31,7 @@ hamburger = game_object.FoodItem(location=plains,
 
 door = game_object.Portal(locations=[plains, house],
                           name="door",
-                          directions=[n, s],
+                          directions=[north, south],
                           locked=False,
                           key=key)
 

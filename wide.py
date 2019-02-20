@@ -1,5 +1,6 @@
 import game_object
 import random
+import math
 
 # logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
@@ -21,6 +22,20 @@ class Location(game_object.Location):
     def random_point(self):
         return (random.uniform(0, self.width),
                 random.uniform(0, self.height),)
+
+    def random_in_circle(self, center, radius):
+        (x, y) = center
+        assert self.includes_point(x, y)
+        depth = 0
+        while True:
+            depth += 1
+            assert depth < 1000
+            theta = random.uniform(0, 2*math.pi)
+            new_radius = random.uniform(0, radius)
+            new_x = math.cos(theta)*new_radius
+            new_y = math.sin(theta)*new_radius
+            if self.includes_point(new_x, new_y):
+                return new_x, new_y
 
     def distance(self, first, second):
         x1, y1 = first.get_coordinates(self)

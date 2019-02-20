@@ -1,3 +1,5 @@
+from random import choice
+
 class Direction:
     def __init__(self, name, letter, vector=None, opposite=None):
         self.vector = vector
@@ -19,14 +21,24 @@ class Direction:
     def __str__(self):
         return self.name
 
+north = Direction("north", "n", (0, 1))
+south = Direction("south", "s", (0, -1), opposite=north)
+east = Direction("east", "e", (1, 0))
+west = Direction("west", "w", (-1, 0), opposite=east)
+up = Direction("up", "u")
+down = Direction("down", "d", opposite=up)
 
-n = Direction("north", "n", (0,1))
-s = Direction("south", "s", (0,-1), opposite=n)
-e = Direction("east", "e", (1,0))
-w = Direction("west", "w", (-1,0), opposite=e)
-u = Direction("up", "u")
-d = Direction("down", "d", opposite=u)
-direction_list = [n, s, e, w, u, d]
+cardinal_directions = [north, south, east, west]
+direction_list = [north, south, east, west, up, down]
+
+
+def random(up_and_down=False):
+    if up_and_down:
+        return choice(direction_list)
+    else:
+        return choice(cardinal_directions)
+
+
 letter_dict = {direct.letter: direct for direct in direction_list}
 name_dict = {direct.name: direct for direct in direction_list}
 # The good way: full_dict = {**letter_dict, **name_dict}

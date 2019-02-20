@@ -6,7 +6,7 @@ import schedule
 import errors
 from logging import debug
 from random import random, randint, triangular
-from game_object import Name
+from name_object import Name
 
 
 class Actor(game_object.Thing):

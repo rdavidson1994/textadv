@@ -366,6 +366,11 @@ class Wait(LoudWait):
         super().__init__(*args, **kwargs)
 
 
+class LongWait(Wait):
+    # Todo: See if you can replace this with float("inf")
+    time_elapsed = 1000000
+
+
 class NullAction(Wait):
     synonyms = []
     time_elapsed = 0

@@ -56,6 +56,10 @@ class NameMaker:
         return "".join(word_pieces)
 
 
+def make_name(syllables=None, name_maker=NameMaker()):
+    return name_maker.create_word(syllables)
+
+
 if __name__ == "__main__":
     nm = NameMaker()
     for i in range(15):
