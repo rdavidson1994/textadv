@@ -141,11 +141,12 @@ class WanderingMonsterAI(AI):
 class KoboldAI(AI):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.enemies = {}  # TODO: Others have enemies as a set. Be consistent
+        self.enemies = {}  # Note: Others have enemies as a set
         self.morale_level = "fight"  # also "rally" and "flee"
         self.squad = None
 
     def get_rally_point(self):
+        # TODO: Kill this
         return self.actor.location.map_node.registry.get_rally_node().location
 
     def attack_enemies(self, targets):
@@ -344,7 +345,7 @@ class PeacefulAI(AI):
 
     class CombatRoutine(action.Routine, action.ZeroTargetAction):
         def get_local_action(self):
-            ai = self.actor.ai
+            ai = self.ai()
             while ai.present_enemies:
                 enemy = element(ai.present_enemies)
                 rout = DefaultStrikeRoutine(self.actor, enemy)
@@ -356,7 +357,6 @@ class PeacefulAI(AI):
                     # Loop continues to next enemy
                     print("Warning, invalid target in present_enemies")
                     ai.present_enemies.remove(enemy)
-                    # TODO: Stop modifying ai's members
             self.complete = True
             return None  # if no more enemies
 

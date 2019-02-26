@@ -1,4 +1,7 @@
 import random
+
+from math import sqrt
+
 from full_path import full_path
 
 class NameMaker:
@@ -6,13 +9,14 @@ class NameMaker:
 
     def __init__(self):
         self.word_onset = self.read("word_onset.txt")
-        self.onset = self.read("onset.txt")
         self.stressed_nucleus = self.read("stressed_nucleus.txt")
         self.nucleus = self.read("nucleus.txt")
-        self.coda = self.read("coda.txt")
         self.word_coda = self.read("word_coda.txt")
+        self.inner = self.read("inner.txt")
+        # self.onset_or_coda = self.dict_sum(self.onset, self.coda)
 
-    def choose(self, dictionary):
+    @staticmethod
+    def choose(dictionary):
         # Credit S.O. users Ned Batchelder and moooeeeep
         choices = dictionary.items()
         total = sum(w for c, w in choices)
@@ -20,11 +24,17 @@ class NameMaker:
         up_to = 0
         for c, w in choices:
             if up_to + w >= r:
-                return c
+                return c, w
             up_to += w
         assert False, "Shouldn't get here"
 
-    def read(self, file_name):
+    # @staticmethod
+    # def choose(dictionary):
+    #     item = random.choice(list(dictionary.items()))
+    #     return item
+
+    @staticmethod
+    def read(file_name):
         out_dict = {}
         comment = False
         with open(full_path(file_name)) as f:
@@ -41,19 +51,35 @@ class NameMaker:
         return out_dict
 
     def create_word(self, syllables=None):
-        if syllables is None:
-            syllables = self.choose(self.syllable_choices)
+        accepted = False
+        pieces = []
+        while not accepted:
+            if syllables is None:
+                syllables, _ = self.choose(self.syllable_choices)
+            pieces_and_weights = [self.choose(self.word_onset)]
+            if random.random() < 1.5:
+                stress_index = 0
+            else:
+                stress_index = random.choice(list(range(0, syllables)))
 
-        word_pieces = [self.choose(self.word_onset),
-                       self.choose(self.stressed_nucleus)]
+            for i in range(0, syllables):
+                if i > 0:
+                    pieces_and_weights.append(self.choose(self.inner))
+                if i == stress_index:
+                    pieces_and_weights.append(self.choose(self.stressed_nucleus))
+                else:
+                    pieces_and_weights.append(self.choose(self.nucleus))
 
-        for i in range(syllables-1):
-            word_pieces.append(self.choose(self.coda))
-            word_pieces.append(self.choose(self.onset))
-            word_pieces.append(self.choose(self.nucleus))
-
-        word_pieces.append(self.choose(self.word_coda))
-        return "".join(word_pieces)
+            pieces_and_weights.append(self.choose(self.word_coda))
+            pieces, weights = zip(*pieces_and_weights)
+            price = sum(1/w for w in weights)
+            cutoff = 0.25+1/syllables
+            if price < cutoff:
+                accepted = True
+            else:
+                print(f"rejected: {''.join(pieces)}")
+                pass
+        return "".join(pieces)
 
 
 def make_name(syllables=None, name_maker=NameMaker()):
@@ -63,8 +89,4 @@ def make_name(syllables=None, name_maker=NameMaker()):
 if __name__ == "__main__":
     nm = NameMaker()
     for i in range(15):
-        print(nm.create_word())
-
-# for s in range(syllables):
-#     for lst in choice_lists:
-#         word_pieces.append(weighted_choice(lst))
+        print(f"{nm.create_word()}")

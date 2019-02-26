@@ -78,27 +78,9 @@ class Person(actor.Person):
 
 
 if __name__ == "__main__":
-    #TODO: Excise this
     test = environment.Test()
     shop = building.WeaponShop(source_location=test.street,
                                sched=test.schedule)
-
-    """
-    shopkeeper = Person(name="shopkeeper",
-                                 location=test.house,
-                                 sched=test.schedule, )
-    shopkeeper.money = 2000
-
-    sword = thing.Item(name="sword", location=test.house)
-    sword.price = 100
-    sword.damage_mult = 3
-    sword.damage_type = "sharp"
-    sword.owner = shopkeeper
-
-    armor = thing.Item(name="armor", location=test.house)
-    armor.price = 150
-    armor.owner = shopkeeper
-    """
 
     test.hero.money = 200
     test.run()

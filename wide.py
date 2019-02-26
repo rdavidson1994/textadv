@@ -32,8 +32,8 @@ class Location(game_object.Location):
             assert depth < 1000
             theta = random.uniform(0, 2*math.pi)
             new_radius = random.uniform(0, radius)
-            new_x = math.cos(theta)*new_radius
-            new_y = math.sin(theta)*new_radius
+            new_x = math.cos(theta)*new_radius+x
+            new_y = math.sin(theta)*new_radius+y
             if self.includes_point(new_x, new_y):
                 return new_x, new_y
 
@@ -49,7 +49,8 @@ class Location(game_object.Location):
                 second.has_location(self))
         x1, y1 = first.get_coordinates(self)
         x2, y2 = second.get_coordinates(self)
-        return (x1 - x2)**2 + (y1 - y2)**2 <= cutoff**2
+        if (x1 - x2)**2 + (y1 - y2)**2 <= cutoff**2:
+            return super().line_of_sight(first, second)
 
     def includes_point(self, x, y):
         return 0 <= x <= self.width and 0 <= y <= self.height

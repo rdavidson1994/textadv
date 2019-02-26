@@ -19,12 +19,78 @@ def optional(*strings):
     return gfl(strings) + "?"
 
 
+def number_from_word(n_string, numwords={}):
+    # Credit to Tom Theisen, stackoverflow user "recursive".
+    # https://stackoverflow.com/questions/493174/
+    try:
+        return int(n_string)
+    except ValueError:
+        pass
+
+    if not numwords:
+        units = [
+            "zero", "one", "two", "three", "four", "five", "six",
+            "seven", "eight", "nine", "ten", "eleven", "twelve",
+            "thirteen", "fourteen", "fifteen", "sixteen", "seventeen",
+            "eighteen", "nineteen",
+        ]
+
+        tens = ["", "", "twenty", "thirty", "forty",
+                "fifty", "sixty", "seventy", "eighty", "ninety"
+        ]
+
+        scales = ["hundred", "thousand", "million", "billion", "trillion"]
+
+        numwords["and"] = (1, 0)
+        for idx, word in enumerate(units):
+            numwords[word] = (1, idx)
+        for idx, word in enumerate(tens):
+            numwords[word] = (1, idx * 10)
+        for idx, word in enumerate(scales):
+            numwords[word] = (10 ** (idx * 3 or 2), 0)
+
+    current = result = 0
+    for word in n_string.split():
+        if word not in numwords:
+            return None
+
+        scale, increment = numwords[word]
+        current = current * scale + increment
+        if scale > 100:
+            result += current
+            current = 0
+
+    return result + current
+
+
+units = ["second", "minute", "hour"]
+unit_group = gfl(units, capture=True)
+time_string_pattern = "^(.*?) ?" + unit_group + "?(?:s)?$"
+time_regex = re.compile(time_string_pattern)
+
+
+def time_string_to_int(time_string):
+    unit_dict = {None: 1, "second": 1, "minute": 60, "hour": 60*60}
+
+    m = time_regex.match(time_string)
+    if m is None:
+        return None
+    else:
+        n_string, u_string = m.groups()
+
+    number = number_from_word(n_string)
+    if number is None:
+        return None
+
+    try:
+        unit = unit_dict[u_string]
+    except KeyError:
+        return None
+
+    return unit*number
+
 class Verb:
     verb_list = []
-    units = ["second", "minute", "hour"]
-    unit_group = gfl(units, capture=True)
-    time_string_pattern = "^(.*?) ?" + unit_group + "?(?:s)?$"
-    time_regex = re.compile(time_string_pattern)
     match_strings = []
 
     def __init__(self, action_class):
@@ -39,16 +105,50 @@ class Verb:
                                for l in token_lists]
 
     class MatchTuple:
-        # TODO: See if you can do this less stupid
         def __init__(self, parser, verb, groups, sig):
             self.parser = parser
             self.verb = verb
             self.groups = groups
             self.sig = sig
+
         def build_action(self):
-            return self.verb.action_from_groups(self.parser,
-                                                self.groups,
-                                                self.sig)
+            from action import FailAction
+            target, tool = None, None
+            kwargs = {}
+            for word, kind in zip(self.groups, self.sig):
+                if kind == "TARGET":
+                    target = self.parser.match_thing_to_name(word)
+                elif kind == "TOOL":
+                    tool = self.parser.match_thing_to_name(word)
+                elif kind == "LANDMARK":
+                    landmark = self.parser.match_landmark_to_name(word)
+                    kwargs["landmark"] = landmark
+                elif kind == "DURATION":
+                    dur = time_string_to_int(word)
+                    if dur is None:
+                        template = "{} doesn't make sense as an amount of time."
+                        text = template.format(word)
+                        return FailAction(
+                            self.parser.actor,
+                            failure_string=text,
+                        )
+                    else:
+                        kwargs["duration"] = dur
+                elif kind == "DIRECTION":
+                    try:
+                        direct = direction.full_dict[word]
+                    except KeyError:
+                        template = "{} doesn't make sense as a direction."
+                        text = template.format(word)
+                        return FailAction(
+                            self.parser.actor,
+                            failure_string=text,
+                        )
+                    else:
+                        kwargs["direction"] = direct
+
+            target_list = [i for i in [target, tool] if i]
+            return self.verb.action_class(self.parser.actor, *target_list, **kwargs)
 
     @classmethod
     def match_action_to_string(cls, parser, input_string):
@@ -100,70 +200,6 @@ class Verb:
         return [t for t in tokens
                 if t in ("TARGET", "TOOL", "DURATION", "DIRECTION", "LANDMARK")]
 
-    @staticmethod
-    def number_from_word(n_string, numwords={}):
-        # Credit to Tom Theisen, stackoverflow user "recursive".
-        # https://stackoverflow.com/questions/493174/
-        try:
-            return int(n_string)
-        except ValueError:
-            pass
-
-        if not numwords:
-            units = [
-                "zero", "one", "two", "three", "four", "five", "six",
-                "seven", "eight","nine", "ten", "eleven", "twelve",
-                "thirteen", "fourteen", "fifteen","sixteen", "seventeen",
-                "eighteen", "nineteen",
-            ]
-
-            tens = ["", "", "twenty", "thirty", "forty",
-                    "fifty", "sixty", "seventy", "eighty", "ninety"
-            ]
-
-            scales = ["hundred", "thousand", "million", "billion", "trillion"]
-
-            numwords["and"] = (1, 0)
-            for idx, word in enumerate(units):
-                numwords[word] = (1, idx)
-            for idx, word in enumerate(tens):
-                numwords[word] = (1, idx * 10)
-            for idx, word in enumerate(scales):
-                numwords[word] = (10 ** (idx * 3 or 2), 0)
-
-        current = result = 0
-        for word in n_string.split():
-            if word not in numwords:
-                return None
-
-            scale, increment = numwords[word]
-            current = current * scale + increment
-            if scale > 100:
-                result += current
-                current = 0
-
-        return result + current
-
-    def time_string_to_int(self, time_string):
-        unit_dict = {None: 1, "second": 1, "minute": 60, "hour": 60*60}
-
-        m = self.time_regex.match(time_string)
-        if m is None:
-            return None
-        else:
-            n_string, u_string = m.groups()
-
-        number = self.number_from_word(n_string)
-        if number is None:
-            return None
-
-        try:
-            unit = unit_dict[u_string]
-        except KeyError:
-            return None
-
-        return unit*number
-
     def match(self, actor, input_string):
         match = None
         quality = None
@@ -179,40 +215,6 @@ class Verb:
             return match.groups(), sig, quality
         else:
             return None, None, quality
-
-    def action_from_groups(self, parser, groups, signature):
-        # TODO: Think about moving this under MatchTuple?
-        from action import FailAction
-        target, tool = None, None
-        kwargs = {}
-        for word, kind in zip(groups, signature):
-            if kind == "TARGET":
-                target = parser.match_thing_to_name(word)
-            elif kind == "TOOL":
-                tool = parser.match_thing_to_name(word)
-            elif kind == "LANDMARK":
-                landmark = parser.match_landmark_to_name(word)
-                kwargs["landmark"] = landmark
-            elif kind == "DURATION":
-                dur = self.time_string_to_int(word)
-                if dur is None:
-                    template = "{} doesn't make sense as an amount of time."
-                    text = template.format(word)
-                    return FailAction(parser.actor, failure_string=text)
-                else:
-                    kwargs["duration"] = dur
-            elif kind == "DIRECTION":
-                try:
-                    direct = direction.full_dict[word]
-                except KeyError:
-                    template = "{} doesn't make sense as a direction."
-                    text = template.format(word)
-                    return FailAction(parser.actor, failure_string=text)
-                else:
-                    kwargs["direction"] = direct
-
-        target_list = [i for i in [target, tool] if i]
-        return self.action_class(parser.actor, *target_list, **kwargs)
 
 
 class StandardVerb(Verb):

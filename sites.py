@@ -1,5 +1,6 @@
-import levelgenerator
+import region
 import game_object
+import building
 import actor
 import ai
 import body
@@ -9,7 +10,6 @@ from dungeonrooms import (TreasureRoom, Barracks, Kitchen, MeatChamber,
 from abc import ABC, abstractmethod
 from typing import Type
 
-
 class Site:
     def __init__(self, sched=None, entrance_portal=None):
         self.schedule = sched
@@ -18,6 +18,7 @@ class Site:
         self.morphs = []
         self.region = None
         self.entrance_portal = entrance_portal
+        entrance_portal.set_site(self)
         self.unused_morph_index = 0
 
     @classmethod
@@ -28,6 +29,14 @@ class Site:
         landmark_name=None,
         **kwargs
     ):
+        if "name" not in kwargs:
+            kwargs["name_pair"] = (
+                name_object.Templated(
+                    "entrance to {}",
+                    landmark_name
+                ),
+                name_object.Name(n="exit")
+            )
         portal = portal_type.free_portal(
             location, direction, coordinates, **kwargs
         )
@@ -56,6 +65,23 @@ class Site:
         self.unused_morph_index = len(self.morphs)
 
 
+class TownSite(Site):
+    # This is a placeholder until two goals are met:
+    # 1. Region code is abstracted enough to accommodate towns
+    # 2. Towns have proper a region subclass written
+    def add_morph(self, new_morph):
+        raise NotImplementedError
+
+    def construct_base_region(self):
+        town = game_object.Location(
+            name="town",
+            description="You are in a very placeholder-like town"
+        )
+        self.entrance_portal.change_location(town)
+        building.WeaponShop(town, sched=self.schedule)
+        self.region = True
+
+
 class RegionSite(Site):
     region_type = None
 
@@ -67,11 +93,11 @@ class RegionSite(Site):
 
 
 class Cave(RegionSite):
-    region_type = levelgenerator.EmptyCaves
+    region_type = region.EmptyCaves
 
 
 class Tomb(RegionSite):
-    region_type = levelgenerator.EmptyTomb
+    region_type = region.EmptyTomb
 
 
 class Morph(ABC):
@@ -86,8 +112,8 @@ class Habitation(Morph):
     filler_rooms = ()
     enemy_number = 0
 
-    EnemyPolicy = levelgenerator.CreaturePolicy
-    BossPolicy = levelgenerator.CreaturePolicy
+    EnemyPolicy = region.CreaturePolicy
+    BossPolicy = region.CreaturePolicy
 
     def alter_region(self, region):
         region.enemy_policy = self.EnemyPolicy(region.schedule)
@@ -107,13 +133,13 @@ class KoboldHabitation(Habitation):
     optional_rooms = (MessHall, Prison, Apothecary, BossQuarters)
     enemy_number = 6
 
-    class EnemyPolicy(levelgenerator.CreaturePolicy):
+    class EnemyPolicy(region.CreaturePolicy):
         adjectives = ["skinny", "tall", "hairy",
                       "filthy", "pale", "short", ]
         enemy_type = actor.KoboldActor
         enemy_name = "kobold"
 
-    class BossPolicy(levelgenerator.CreaturePolicy):
+    class BossPolicy(region.CreaturePolicy):
         def get_creature(self, location=None, adjective=None):
             name = name_object.Name(a=["kobold", "leader"],
                              n=["leader", "kobold"])
@@ -133,7 +159,7 @@ class GhoulHabitation(Habitation):
     essential_rooms = (MeatChamber, )
     enemy_number = 4
 
-    class EnemyPolicy(levelgenerator.CreaturePolicy):
+    class EnemyPolicy(region.CreaturePolicy):
         adjectives = ["skinny", "tall", "hairy",
                       "filthy", "pale", "short", ]
 

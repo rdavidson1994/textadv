@@ -367,8 +367,7 @@ class Wait(LoudWait):
 
 
 class LongWait(Wait):
-    # Todo: See if you can replace this with float("inf")
-    time_elapsed = 1000000
+    time_elapsed = float("inf")
 
 
 class NullAction(Wait):
@@ -654,12 +653,10 @@ class Routine:
         return True
 
     def agrees_to(self, own_action):
-        # TODO: Investigate relaying this to owned-routines
         return True
 
     def hear_announcement(self, action):
         if self.routine and not self.routine.complete:
-            # TODO: See if "if self.routine" would work here.
             self.routine.hear_announcement(action)
         if (
                 getattr(action, "traverses_portals", False)
@@ -675,7 +672,6 @@ class Routine:
             if routine_response is not None:
                 return routine_response
             else:
-                # TODO: See if this is ok?
                 return True, ""
 
         if self.actor.awake:

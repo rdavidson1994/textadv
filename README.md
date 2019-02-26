@@ -2,11 +2,11 @@
 
 Make sure you have the latest python3 install. Then do this:
 
-```py world.py```
+```py entrypoint.py```
 
 If that didn't work, do this
 
-```python3 world.py```
+```python3 entrypoint.py```
 
 Example commands:
 

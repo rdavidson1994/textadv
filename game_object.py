@@ -48,6 +48,7 @@ class Thing:
                  names=(),
                  *args,
                  **kwargs):
+        self.physical = True
         self.trapping_item = None
         self.coordinates = coordinates
         self.things = set()
@@ -77,7 +78,7 @@ class Thing:
         return "the "+self.get_name(viewer)
 
     def line_of_sight(self, first, second):
-        return True
+        return second.physical
 
     def hear_announcement(self, action):
         try:
@@ -135,7 +136,7 @@ class Thing:
         if not keep_arranged:
             self.arranged = False
         else:
-            self.original_location=new_location
+            self.original_location = new_location
         self.coordinates = coordinates
 
     def has_trait(self, trait):
@@ -170,7 +171,6 @@ class Thing:
 
     def get_interactables(self, viewer=None):
         '''PUBLIC: returns a list with all interactables at the location.'''
-        # Rename to "get_nested_things" when home.
         output = set(self.things)
         if viewer:
             output = {t for t in output if self.line_of_sight(viewer, t)}
@@ -310,7 +310,6 @@ class Item(Thing):
 
 class FoodItem(Item):
     def __init__(self, nutrition=0, *args, **kwargs):
-        # TODO: Make traits inherit automatically, to avoid this __init__
         Item.__init__(self, *args, **kwargs)
         self.traits.add("food")
         self.nutrition = nutrition
@@ -389,6 +388,9 @@ class PortalVertex(Thing):
         self.edge = edge
         self.landmark = None
 
+    def set_site(self, site):
+        self.edge.site = site
+
     def be_entered(self, actor):
         success, string = self.edge.be_entered(actor)
 
@@ -450,6 +452,7 @@ class PortalEdge:
         *args,
         **kwargs
     ):
+        self.site = None
         self.source_loc, self.target_loc = locations
         self.source_coords, self.target_coords = coordinate_pairs
         self.source_direction, self.target_direction = directions
@@ -497,6 +500,8 @@ class PortalEdge:
         return output_portal
 
     def be_entered(self, actor):
+        if self.site:
+            self.site.update_region()
         if actor.location == self.source.location:
             actor.change_location(self.target.location, self.target.coordinates)
             actor.nearest_portal = self.target

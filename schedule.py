@@ -161,23 +161,22 @@ class Schedule:
         else:
             end_time = None
         self.end_game = False
-        new_stopped_actors = list()
-        for actor in self.stopped_actors:
-            debug("action granted to stopped actor? huh?")
-            self.grant_action(actor)
-        self.stopped_actors = new_stopped_actors
-        while (not self.end_game and self.event_list and
-               (end_time is None or self.current_time < end_time)):
-            # print(f"{self}.end_game is False")
-            # debug("{}".format(self.event_list))
+
+        while (
+            not self.end_game
+            and (self.event_list or self.stopped_actors)
+            and (end_time is None or self.current_time < end_time)
+        ):
+            if self.stopped_actors:
+                for actor in self.stopped_actors:
+                    self.grant_action(actor)
+                self.stopped_actors = list()
             event = self.event_list.pop()
-            # debug("{}".format(event))
             if event.actor in self.actors:
                 self.current_time = event.time
                 event.happen()
             else:
                 pass
-        # print("game over")
 
 
 class DefaultSchedule(Schedule):

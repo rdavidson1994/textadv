@@ -12,6 +12,7 @@ from name_object import Name
 class Actor(game_object.Thing):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.physical = False
         self.awake = True
         self.traits.update({"actor", "listener"})
         self.scheduled_event = None
@@ -40,8 +41,9 @@ class Actor(game_object.Thing):
         else:
             return True, ""
 
-    def change_location(self, new_location, coordinates=None,
-                        keep_arranged=False):
+    def change_location(
+        self, new_location, coordinates=None, keep_arranged=False
+    ):
         # This is pretty slow! Probably don't do this
         super().change_location(new_location, coordinates, keep_arranged)
         for item in new_location.things:
@@ -88,24 +90,25 @@ class Actor(game_object.Thing):
     def hear_timer(self, keyword):
         pass
 
+    def is_hostile_to(self, other):
+        return self.ai.is_hostile_to(other)
+
 
 class Person(Actor):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.physical = True
         self.combat_skill = 50
         self.known_landmarks = set()
         self.body = body.Body(self)
-        self.money = 0  # TODO: Abstract this out
+        self.money = 0
 
     def hear_announcement(self, action):
         self.ai.hear_announcement(action)
 
     def view_location(self):
         self.ai.display(self.location.describe(self, full_text=True))
-
-    def is_hostile_to(self, other):
-        return self.ai.is_hostile_to(other)
 
     def get_look_text(self, viewer=None):
         out = super().get_look_text()

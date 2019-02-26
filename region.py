@@ -2,7 +2,7 @@ from random import random, randint, sample, shuffle
 from direction import north, south, east, west
 import spells
 from vector import Vector
-from dungeonrooms import *  # TODO: Fix this when you get home
+import dungeonrooms
 import logging
 # these below imports are for testing
 import schedule
@@ -12,7 +12,6 @@ import phrase
 debug = logging.debug
 logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
-# import matplotlib.pyplot as plt
 directions = [north, south, east, west]
 
 
@@ -25,7 +24,7 @@ class InfiniteDeck:
 
     def __next__(self):
         if self.lst:
-            return choice(self.lst)
+            return dungeonrooms.choice(self.lst)
         else:
             raise StopIteration
 
@@ -52,11 +51,11 @@ class CreaturePolicy:
 
     def get_creature(self, location=None):
         adjective = self.get_adjective()
-        name = Name(adjective, self.enemy_name)
+        name = dungeonrooms.Name(adjective, self.enemy_name)
         return self.enemy_type(location, name=name, sched=self.schedule)
 
 
-class Registry:
+class Region:
     def __init__(self, sched=None, entrance_portal=None):
         self.node_list = []
         self.connection_list = []
@@ -142,7 +141,7 @@ class Registry:
         candidates = [node for node in self.node_list
                       if isinstance(node.location, room_type)]
         if not candidates:
-            raise MissingNode
+            raise dungeonrooms.MissingNode
         return candidates[0]
 
     def register_node(self, node):
@@ -168,7 +167,7 @@ class Registry:
     def build_blank_locations(self):
         for index, node in enumerate(self.node_list):
             if node.location is None:
-                location = Location(description="Place {}".format(index))
+                location = dungeonrooms.Location(description="Place {}".format(index))
                 node.set_location(location)
 
     def build_portals(self):
@@ -300,11 +299,11 @@ class Registry:
         return self.path_to_goal(start, goal)
 
     def path_to_random(self, start):
-        goal = choice(self.node_list)
+        goal = dungeonrooms.choice(self.node_list)
         return self.path_to_goal(start, goal)
 
 
-class Caves(Registry):
+class Caves(Region):
     enemy_number = 0
     enemy_adjectives = []
     essential_rooms = ()
@@ -326,11 +325,11 @@ class Caves(Registry):
             if (len(self.node_list) >= len(self.essential_rooms)
                     and len(self.get_forks()) >= 2
                     and len(self.get_vertices()) >= 4):
-                debug('n={}'.format(n))
+                dungeonrooms.debug('n={}'.format(n))
                 break
             else:
-                debug("rejected the following map:")
-                debug(self.get_text_map())
+                dungeonrooms.debug("rejected the following map:")
+                dungeonrooms.debug(self.get_text_map())
         else:
             raise Exception  # I generated 100 maps, and none worked.
         self.build_locations(essential = self.essential_rooms,
@@ -351,7 +350,7 @@ class Caves(Registry):
 
     def breed_random_node(self):
         try:
-            node = choice(self.unbred_nodes)
+            node = dungeonrooms.choice(self.unbred_nodes)
         except IndexError:
             pass
         else:
@@ -384,8 +383,8 @@ class Caves(Registry):
             for room_type in deck:
                 try:
                     chosen_node = room_type.choose_node(self)
-                except NotEnoughNodes:
-                    debug("Out of nodes. Ending optional room creation.")
+                except dungeonrooms.NotEnoughNodes:
+                    dungeonrooms.debug("Out of nodes. Ending optional room creation.")
                     break
                 self.build_room(room_type, chosen_node)
         self.build_blank_locations()
@@ -395,8 +394,8 @@ class Caves(Registry):
         shuffle(self.enemy_adjectives)
         for i in range(self.enemy_number):
             while True:
-                node = choice(self.node_list)
-                if not isinstance(node.location, Entrance):
+                node = dungeonrooms.choice(self.node_list)
+                if not isinstance(node.location, dungeonrooms.Entrance):
                     break
             loc = node.location
             # adjective = self.enemy_adjectives[i]
@@ -406,9 +405,9 @@ class Caves(Registry):
 
 class EmptyCaves(Caves):
     breed_count = 4
-    essential_rooms = (CaveEntrance,)
+    essential_rooms = (dungeonrooms.CaveEntrance,)
     optional_rooms = ()
-    filler_rooms = (CaveFiller,)
+    filler_rooms = (dungeonrooms.CaveFiller,)
 
 
 # class KoboldCaves(Caves):
@@ -437,9 +436,9 @@ class EmptyCaves(Caves):
 
 
 class EmptyTomb(Caves):
-    essential_rooms = (TombEntrance, Crypt)
-    optional_rooms = (OfferingRoom, Temple, TombSanctum)
-    filler_rooms = (CaveFiller,)
+    essential_rooms = (dungeonrooms.TombEntrance, dungeonrooms.Crypt)
+    optional_rooms = (dungeonrooms.OfferingRoom, dungeonrooms.Temple, dungeonrooms.TombSanctum)
+    filler_rooms = (dungeonrooms.CaveFiller,)
     breed_count = 2
 
 
@@ -489,7 +488,7 @@ class Connection:
     def is_horizontal(self):
         return self.coords[1].is_integer()
 
-    def build_portal(self, name="doorway", portal_type=PortalEdge):
+    def build_portal(self, name="doorway", portal_type=dungeonrooms.PortalEdge):
         if not self.portal:
             self.portal = portal_type(locations=self.locations(),
                                       directions=self.directions(),
@@ -565,8 +564,8 @@ class Node:
 
 
 def a_star_test():
-    prison = reg.node_with_type(Prison)
-    entrance = reg.node_with_type(CaveEntrance)
+    prison = reg.node_with_type(dungeonrooms.Prison)
+    entrance = reg.node_with_type(dungeonrooms.CaveEntrance)
     return reg.a_star(prison, entrance)
 
 
@@ -575,7 +574,7 @@ def prison_test():
     # Usage: prisoner, key, cage = prison_test()
     prison = [node.location
               for node in reg.node_list
-              if isinstance(node.location, Prison)][0]
+              if isinstance(node.location, dungeonrooms.Prison)][0]
     john.change_location(prison)
     watches = [
                    list(prison.things_with_name(name))[0]
@@ -607,15 +606,15 @@ if __name__ == "__main__":
     # debug([con.direction.letter for con in reg.connection_list])
     vertices = reg.get_vertices()
     # debug([node.vector.coords for node in vertices])
-    start_location = reg.node_with_type(CaveEntrance).location
+    start_location = reg.node_with_type(dungeonrooms.CaveEntrance).location
     monsters = []
     for st in ["skinny", "tall", "hairy", "filthy", "pale", "short"]:
         while True:
-            node = choice(reg.node_list)
-            if not isinstance(node.location, CaveEntrance):
+            node = dungeonrooms.choice(reg.node_list)
+            if not isinstance(node.location, dungeonrooms.CaveEntrance):
                 break
         loc = node.location
-        name = Name(st,"kobold")
+        name = dungeonrooms.Name(st, "kobold")
         zom = actor.KoboldActor(loc,
                                 name=name,
                                 sched=my_schedule, )
@@ -630,10 +629,10 @@ if __name__ == "__main__":
     john.spells_known = {spells.Shock, spells.StunWave, spells.Fireball}
     john.body.mana = 50
     john.body.max_mana = 50
-    sword = Item(location=john,
-                 name=Name(a=["iron", "long"],
-                           n=["longsword", "sword"]),
-                 )
+    sword = dungeonrooms.Item(location=john,
+                              name=dungeonrooms.Name(a=["iron", "long"],
+                                                     n=["longsword", "sword"]),
+                              )
     sword.damage_type = "sharp"
     sword.damage_mult = 3
     my_parser = john.ai

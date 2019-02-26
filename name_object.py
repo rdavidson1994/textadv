@@ -45,7 +45,7 @@ class Name:
     def get_text(self, viewer=None, use_article=False):
         if self.display_name:
             return self.display_name
-        elif self.adjectives:
+        elif self.adjectives and self.nouns:
             return self.adjectives[0] + " " + self.nouns[0]
         else:
             return self.nouns[0]
@@ -58,3 +58,19 @@ class Name:
                 continue
         else:
             return False
+
+
+class Templated(Name):
+    def __init__(self, template, base_name, a=(), n=()):
+        self.template = template
+        self.base_name = Name.accept_string(base_name)
+        Name.__init__(
+            self,
+            a=a+tuple(self.base_name.adjectives),
+            n=n+tuple(self.base_name.nouns),
+        )
+
+    def get_text(self, viewer=None, use_article=False):
+        return self.template.format(
+            self.base_name.get_text(viewer, use_article)
+        )

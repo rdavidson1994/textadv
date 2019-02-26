@@ -1,20 +1,14 @@
+import name_object
 import schedule, actor, wide, action, namemaker, sites
 import ai
 import direction
+from name_object import Name
 from random import random
 
 
 class TestAI(ai.AI):
-
-    class TestAction(action.ZeroTargetAction):
-        hidden = True
-        synonyms = ["test action"]
-
-    def affect_game(self):
-        print("Action happened!")
-
     def get_local_action(self):
-        return self.TestAction(self.actor)
+        return action.LongWait(self.actor)
 
 
 class WorldAgent(actor.Actor):
@@ -38,17 +32,39 @@ class WorldAgent(actor.Actor):
 
 
 class Town(WorldAgent):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.site = sites.TownSite.at_point(
+            location=self.location,
+            direction=direction.random(),
+            coordinates=self.coordinates,
+            landmark_name=name_object.Templated(
+                a=("city",),
+                template="{} city",
+                base_name=self.name_object,
+            ),
+        )
+
     def take_turn(self):
         if self.destroyed:
             return
 
         if random() < 1/100:
-            print(f"{self.name} built a tomb")
-            sites.Tomb.at_point(
+            tomb_name = namemaker.make_name()
+            print(f"{self.name} built a tomb named {tomb_name}")
+            tomb = sites.Tomb.at_point(
                 world_map,
                 direction.random(),
                 world_map.random_in_circle(self.coordinates, 5),
+                landmark_name=Name(tomb_name, "tomb"),
             )
+            tomb_roll = random()
+            if tomb_roll<1/3:
+                tomb.add_morph(sites.KoboldHabitation())
+            elif tomb_roll<2/3:
+                tomb.add_morph(sites.GhoulHabitation())
+            assert tomb.schedule == self.schedule
 
         if random() < 1/1000:
             self.unrest += 20
@@ -100,6 +116,7 @@ class BanditGroup(WorldAgent):
             self.destroyed = True
             print(f"The bandit group {self.name} was disbanded")
 
+
 world_schedule = schedule.Schedule()
 world_map = wide.Location(sched=world_schedule)
 
@@ -123,6 +140,9 @@ if __name__ == "__main__":
             coordinates=world_map.random_point(),
         )
     world_schedule.run_game(15000000)
+    for cave in caves:
+        cave.update_region()
+
     dude = actor.Hero(
         location=world_map,
         name="dude",
