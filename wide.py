@@ -3,21 +3,36 @@ import random
 import math
 
 # logging.basicConfig(level=logging.DEBUG, format='%(message)s')
+import location
 
 
-class Location(game_object.Location):
+class Location(location.Location):
     view_distance = 10
-    width = 30
-    height = 30
 
-    def __init__(self, *args, **kwargs):
-        game_object.Location.__init__(self, *args, **kwargs)
+    def __init__(self, *args, width=30, height=30, **kwargs):
+        location.Location.__init__(self, *args, **kwargs)
+        self.width = width
+        self.height = height
         self.traits.add("wide")
 
     def describe(self, viewer, full_text=True):
         out = super().describe(viewer, full_text)
         out += "\nCoordinates: " + str(viewer.coordinates)
         return out
+
+    def sites(self, center=None, radius=None):
+        # If you specify a center/radius, you must specify both
+        entrances = set(
+            portal for portal in self.things_with_trait("portal")
+            if portal.edge.site is not None
+        )
+        if center is not None and radius is not None:
+            return set(
+                portal.edge.site for portal in entrances
+                if self.distance(portal, center) < radius
+            )
+        else:
+            return set(portal.edge.site for portal in entrances)
 
     def random_point(self):
         return (random.uniform(0, self.width),
@@ -38,9 +53,20 @@ class Location(game_object.Location):
                 return new_x, new_y
 
     def distance(self, first, second):
-        x1, y1 = first.get_coordinates(self)
-        x2, y2 = second.get_coordinates(self)
-        return (x1 - x2) ** 2 + (y1 - y2) ** 2
+        try:
+            a = first.get_coordinates(self)
+        except AttributeError:
+            a = first
+        try:
+            b = second.get_coordinates(self)
+        except AttributeError:
+            b = second
+        return self.coordinate_distance(a, b)
+
+    def coordinate_distance(self, first, second):
+        x1, y1 = first
+        x2, y2 = second
+        return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
     def line_of_sight(self, first, second, cutoff=None):
         if cutoff is None:

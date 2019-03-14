@@ -1,14 +1,16 @@
+import location
 import region
 import game_object
 import building
 import actor
 import ai
 import body
-import name_object
+from name_object import Name
 from dungeonrooms import (TreasureRoom, Barracks, Kitchen, MeatChamber,
                           MessHall, Prison, Apothecary, BossQuarters, )
 from abc import ABC, abstractmethod
 from typing import Type
+
 
 class Site:
     def __init__(self, sched=None, entrance_portal=None):
@@ -16,10 +18,21 @@ class Site:
         if self.schedule is None:
             self.schedule = entrance_portal.schedule
         self.morphs = []
+        self.populations = []
         self.region = None
         self.entrance_portal = entrance_portal
         entrance_portal.set_site(self)
         self.unused_morph_index = 0
+
+    def allows_population(self, population):
+        return all(p.allows_other(population) for p in self.populations)
+
+    def add_population(self, population):
+        assert self.allows_population(population)
+        self.populations.append(population)
+
+    def remove_population(self, population):
+        self.populations.remove(population)
 
     @classmethod
     def at_point(
@@ -31,11 +44,8 @@ class Site:
     ):
         if "name" not in kwargs:
             kwargs["name_pair"] = (
-                name_object.Templated(
-                    "entrance to {}",
-                    landmark_name
-                ),
-                name_object.Name(n="exit")
+                Name("entrance to")+landmark_name,
+                Name("exit")
             )
         portal = portal_type.free_portal(
             location, direction, coordinates, **kwargs
@@ -64,20 +74,30 @@ class Site:
             self.region = morph.alter_region(self.region)
         self.unused_morph_index = len(self.morphs)
 
+        for population in self.populations:
+            population.render(self.region)
+
 
 class TownSite(Site):
     # This is a placeholder until two goals are met:
     # 1. Region code is abstracted enough to accommodate towns
     # 2. Towns have proper a region subclass written
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.town = None
+
     def add_morph(self, new_morph):
         raise NotImplementedError
 
+    def allows_population(self, population):
+        return False
+
     def construct_base_region(self):
-        town = game_object.Location(
+        town = location.Location(
             name="town",
             description="You are in a very placeholder-like town"
         )
-        self.entrance_portal.change_location(town)
+        self.entrance_portal.change_location(self.town)
         building.WeaponShop(town, sched=self.schedule)
         self.region = True
 
@@ -101,6 +121,9 @@ class Tomb(RegionSite):
 
 
 class Morph(ABC):
+    def __init__(self, clear_inhabitants=True):
+        self.clear_inhabitants = clear_inhabitants
+
     @abstractmethod
     def alter_region(self, region):
         pass
@@ -120,11 +143,14 @@ class Habitation(Morph):
         region.boss_policy = self.BossPolicy(region.schedule)
         region.enemy_number = self.enemy_number
 
-        region.build_locations(essential=self.essential_rooms,
-                               optional=self.optional_rooms,
-                               filler=self.filler_rooms, )
+        region.build_locations(
+            essential=self.essential_rooms,
+            optional=self.optional_rooms,
+            filler=self.filler_rooms,
+        )
+        # old code using the creature policies:
+        # region.create_inhabitants()
 
-        region.create_inhabitants()
         return region
 
 
@@ -136,20 +162,19 @@ class KoboldHabitation(Habitation):
     class EnemyPolicy(region.CreaturePolicy):
         adjectives = ["skinny", "tall", "hairy",
                       "filthy", "pale", "short", ]
-        enemy_type = actor.KoboldActor
+        enemy_type = actor.SquadActor
         enemy_name = "kobold"
 
     class BossPolicy(region.CreaturePolicy):
         def get_creature(self, location=None, adjective=None):
-            name = name_object.Name(a=["kobold", "leader"],
-                             n=["leader", "kobold"])
+            name = Name("kobold leader")
             boss = actor.Person(location=location,
                                 name=name,
                                 sched=self.schedule)
             boss.combat_skill = 75
             boss.ai = ai.WanderingMonsterAI(boss)
             spear = game_object.Item(location=boss,
-                                     name=name_object.Name("crude", "sword"))
+                                     name=Name("crude sword"))
             spear.damage_type = "sharp"
             spear.damage_mult = 3
             return boss
@@ -164,7 +189,7 @@ class GhoulHabitation(Habitation):
                       "filthy", "pale", "short", ]
 
         def get_creature(self, location=None):
-            name = name_object.Name(self.get_adjective(), "ghoul")
+            name = Name(self.get_adjective()+" ghoul")
             ghoul = actor.Person(location, name=name, sched=self.schedule)
             ai.WanderingMonsterAI(ghoul)
             ghoul.body = body.UndeadBody(ghoul)

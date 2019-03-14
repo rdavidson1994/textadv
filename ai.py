@@ -138,7 +138,7 @@ class WanderingMonsterAI(AI):
         return Wait(self.actor)
 
 
-class KoboldAI(AI):
+class SquadAI(AI):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.enemies = {}  # Note: Others have enemies as a set
@@ -146,8 +146,7 @@ class KoboldAI(AI):
         self.squad = None
 
     def get_rally_point(self):
-        # TODO: Kill this
-        return self.actor.location.map_node.registry.get_rally_node().location
+        return self.actor.location.rally_point()
 
     def attack_enemies(self, targets):
         target = next(iter(targets))
@@ -211,7 +210,7 @@ class KoboldAI(AI):
     class Rally(Routine, ZeroTargetAction):
         class WalkToRallyRoutine(DestinationRoutine):
             def build_portal_list(self):
-                return self.map_.path_to_rally(self.home_node)
+                return self.actor.location.path_to_rally()
 
         def see_thing(self, thing):
             nearby_allies = self.ai().nearby_allies()
@@ -247,19 +246,36 @@ class KoboldAI(AI):
             self.enemies = enemies
             super().__init__(*args, **kwargs)
 
+        # def build_portal_list(self):
+        #     paths = []
+        #     for enemy, sighting in self.enemies.items():
+        #         try:
+        #             target_node = sighting.location.map_node
+        #         except AttributeError:
+        #             return []
+        #         paths.append(self.map_.path_to_goal(self.home_node, target_node))
+        #     best = min(paths, key=len)
+        #     if best:
+        #         return best
+        #     else:
+        #         return []
+
         def build_portal_list(self):
             paths = []
             for enemy, sighting in self.enemies.items():
+                target_location = sighting.location
                 try:
-                    target_node = sighting.location.map_node
+                    path = self.actor.location.path_to_location(target_location)
+                    paths.append(path)
                 except AttributeError:
-                    return []
-                paths.append(self.map_.path_to_goal(self.home_node, target_node))
-            best = min(paths, key=len)
-            if best:
-                return best
-            else:
-                return []
+                    pass
+            if paths:
+                best = min(paths, key=len)
+                if best:
+                    return best
+
+            return []
+
 
     def nearby_enemies(self):
         things = self.actor.location.things
@@ -388,9 +404,9 @@ class PrisonerAI(PeacefulAI):
 
     def get_local_action(self):
         if (
-                self.actor.location.things_with_trait("hero")
-                and self.hostile_to_hero
-           ):
+            self.actor.location.things_with_trait("hero")
+            and self.hostile_to_hero
+        ):
             act = self.start_routine(AttackHeroRoutine(self.actor))
             if act:
                 return act
@@ -415,7 +431,7 @@ class PrisonerAI(PeacefulAI):
 
 if __name__ == "__main__":
     import actor
-    from game_object import Location
+    from location import Location
 
     place = Location()
     dude = actor.WaitingActor()

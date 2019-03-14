@@ -1,76 +1,88 @@
 import re
 
 from verb import group_from_list as gfl
+from copy import copy
+
+try:
+    from nltk.corpus import wordnet as wn
+    using_nltk = True
+except ImportError:
+    wn = None
+    using_nltk = True
+
+def recursive_hypernyms(synset):
+    next_hypernyms = synset.hypernyms()
+    out = set(x for x in synset.lemma_names() if "_" not in x)
+    for hypernym in next_hypernyms:
+        out |= recursive_hypernyms(hypernym)
+    return out
+
+
+def best_synset(word):
+    dots = word.count(".")
+    if dots == 0:
+        # "sword"
+        try:
+            return wn.synsets(word)[0]
+        except IndexError:
+            return None
+    elif dots == 1:
+        # "sword.n"
+        return wn.synset(word+".01")
+    elif dots == 2:
+        # "sword.n.01"
+        return wn.synset(word)
+    else:
+        raise AttributeError
+
+
+def subset_names(name_string):
+    pieces = name_string.split(" ")
+    out = set(p for p in pieces if "." not in pieces)
+    for piece in pieces:
+        synset = best_synset(piece)
+        if synset:
+            hypernyms = recursive_hypernyms(synset)
+            out |= hypernyms
+        else:
+            out.add(piece)
+    return out
 
 
 class Name:
-    @staticmethod
-    def wrap_if_str(possible_str):
-        if isinstance(possible_str, str):
-            return [possible_str]
-        else:
-            return list(possible_str)
-
-    @staticmethod
-    def sequence_regex(*seq):
-        group_seq = [gfl(i) for i in seq]
-        group_str = " ".join(group_seq)
-        strict_str = "^" + group_str + "$"
-        return re.compile(strict_str)
-
     @classmethod
-    def accept_string(cls, string_or_name):
-        if isinstance(string_or_name, cls):
-            return string_or_name
-        elif isinstance(string_or_name, str):
-            return cls(n=string_or_name)
-
-    def __init__(self,
-                 a=(),
-                 n=(),
-                 has_article=False,
-                 display_name=None):
-        self.nouns = self.wrap_if_str(n)
-        self.adjectives = self.wrap_if_str(a)
-        self.has_article = has_article
-        self.display_name = display_name
-        noun_regex = self.sequence_regex(self.nouns)
-        if a:
-            adjective_regex = self.sequence_regex(self.adjectives)
-            full_regex = self.sequence_regex(self.adjectives, self.nouns)
-            self.regex_list = [noun_regex, adjective_regex, full_regex]
+    def accept_string(cls, possible_str):
+        if isinstance(possible_str, cls):
+            return copy(possible_str)
         else:
-            self.regex_list = [noun_regex]
+            return cls(possible_str)
 
-    def get_text(self, viewer=None, use_article=False):
-        if self.display_name:
-            return self.display_name
-        elif self.adjectives and self.nouns:
-            return self.adjectives[0] + " " + self.nouns[0]
+    def __init__(self, display_string, definition_string=None):
+        if definition_string is None:
+            definition_string = display_string
         else:
-            return self.nouns[0]
-
-    def matches(self, text):
-        for regex in self.regex_list:
-            if regex.match(text):
-                return True
-            else:
-                continue
+            definition_string = definition_string
+        self.display_string = display_string
+        if using_nltk:
+            self.lemma_set = subset_names(definition_string)
         else:
-            return False
+            self.lemma_set = set(definition_string.split(" "))
 
+    def get_text(self):
+        return self.display_string
 
-class Templated(Name):
-    def __init__(self, template, base_name, a=(), n=()):
-        self.template = template
-        self.base_name = Name.accept_string(base_name)
-        Name.__init__(
-            self,
-            a=a+tuple(self.base_name.adjectives),
-            n=n+tuple(self.base_name.nouns),
+    def matches(self, string):
+        pieces = string.split(" ")
+        return all(piece in self.lemma_set for piece in pieces)
+
+    def add(self, other, template):
+        new_name = self.accept_string(other)
+        new_name.lemma_set |= self.lemma_set
+        new_name.display_string = template.format(
+            self.display_string,
+            new_name.display_string,
         )
+        return new_name
 
-    def get_text(self, viewer=None, use_article=False):
-        return self.template.format(
-            self.base_name.get_text(viewer, use_article)
-        )
+    def __add__(self, other):
+        return self.add(other, template="{} {}")

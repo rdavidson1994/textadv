@@ -3,7 +3,6 @@ import errors
 from name_object import Name
 import logging
 import direction
-from random import choice
 from menu_wrap import menu_wrap
 
 debug = logging.debug
@@ -38,16 +37,10 @@ class Landmark:
 
 
 class Thing:
-    def __init__(self,
-                 location=None,
-                 name="",
-                 coordinates=None,
-                 other_names=(),
-                 sched=None,
-                 traits=(),
-                 names=(),
-                 *args,
-                 **kwargs):
+    def __init__(
+            self, location=None, name="", coordinates=None, other_names=(),
+            sched=None, traits=(), names=(), *args, **kwargs
+    ):
         self.physical = True
         self.trapping_item = None
         self.coordinates = coordinates
@@ -66,9 +59,12 @@ class Thing:
         if isinstance(name, Name):
             self.name_object = name
         elif names:
-            self.name_object = Name(a=[], n=names)
+            self.name_object = Name(
+                display_string=names[0],
+                definition_string=" ".join(names),
+            )
         else:
-            self.name_object = Name(a=[], n=[name])
+            self.name_object = Name(name)
         self.name = self.name_object.get_text()
         self.nearest_portal = None
         self.owner = None
@@ -124,11 +120,17 @@ class Thing:
             self.location.things.remove(self)
         self.location = None
 
+    def materialize(self, location, coordinates=None):
+        if self.location is not None:
+            raise AttributeError
+        self.change_location(location, coordinates)
+
     def add_thing(self, thing, coordinates=None):
         self.things.add(thing)
 
-    def change_location(self, new_location, coordinates=None,
-                        keep_arranged=False):
+    def change_location(
+        self, new_location, coordinates=None, keep_arranged=False
+    ):
         if self.location is not None:
             self.location.things.remove(self)
         self.location = new_location
@@ -187,19 +189,12 @@ class Thing:
             for container in self.things_with_trait("container"):
                 if container.has_nested_thing(thing):
                     return True
-
-    def has_thing_with_name(self, name):
-        return {thing for thing in self.things if thing.has_name(name)} != set()
+            return False
 
     def has_furnishing(self, name):
-        for thing in self.things:
-            if (
-                    thing.has_name(name)
-                    and thing.original_location == self
-                    and thing.arranged
-            ):
+        for thing in self.things_with_name(name):
+            if thing.original_location == self and thing.arranged:
                 return True
-
         return False
 
     def __repr__(self):
@@ -262,41 +257,6 @@ class Thing:
     def show_text_to_hero(self, text):
         for i in self.things_with_trait("hero"):
             i.receive_text_message(text)
-
-
-class Location(Thing):
-    def __init__(self, description="", reg=None, *args, **kwargs):
-        Thing.__init__(self, *args, **kwargs)
-        self.reg=reg
-        self.traits.add("location")
-        self.description = description
-
-    @staticmethod
-    def is_entrance():
-        return False
-
-    def get_description(self, viewer: Thing):
-        return self.description
-
-    def describe(self, viewer, full_text=True):
-        '''PUBLIC: returns a string description of the location'''
-        str_list = []
-        category_list = [("actor", "\nPeople and animals:"),
-                         ("item", "\nObjects of interest:"),
-                         ("portal", "\nExits:")]
-        if full_text:
-            str_list.append(self.get_description(viewer))
-        for trait, header in category_list:
-            subset = self.things_with_trait(trait)
-            if viewer in subset:
-                subset.remove(viewer)
-            subset = {t for t in subset if self.line_of_sight(viewer, t)}
-            debug(subset)
-            if subset:
-                str_list.append(header)
-            for thing in subset:
-                str_list.append(thing.get_name(viewer))
-        return '\n'.join(str_list)
 
 
 class Item(Thing):
@@ -549,15 +509,14 @@ class Door(PortalEdge):
             direct = direction.random()
         directions = (direct.opposite, direct)
         name_pair = [
-                         Name(
-                                  a=["door to","door"],
-                                  n=[place.name, "door"],
-                             )
-                         for place in (end, start)
-                    ]
-        super().__init__(locations=locations,
-                         directions=directions,
-                         name_pair=name_pair)
+            Name("door to")+place.name
+            for place in (end, start)
+        ]
+        super().__init__(
+            locations=locations,
+            directions=directions,
+            name_pair=name_pair
+        )
 
 
 """

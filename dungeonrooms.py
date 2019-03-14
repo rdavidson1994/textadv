@@ -1,4 +1,5 @@
-from game_object import Location, Item, Thing, FoodItem, Cage, PortalEdge, Landmark
+from game_object import Item, Thing, FoodItem, Cage, PortalEdge, Landmark
+from location import Location
 from name_object import Name
 from actor import Prisoner
 from namemaker import NameMaker
@@ -35,6 +36,7 @@ class ExitNumber(Preference):
 
 class NotVertex(ExitNumber):
     def __init__(self):
+        super().__init__(0)
         self.desired_exit_numbers = (2, 3, 4,)
 
 
@@ -132,8 +134,7 @@ class GeneratedRoom(Location):
             basis_desc = ""
 
         parser = parsetemplate.RoomTemplateParser(
-            self,
-            newer_room=self.newer_location
+            self, newer_room=self.newer_location
         )
 
         own_desc = parser.full_parse()
@@ -144,13 +145,13 @@ class GeneratedRoom(Location):
             return own_desc
 
     @classmethod
-    def choose_node(cls, registry):
-        debug(registry.get_text_map())
-        candidate_list = registry.unbuilt_nodes
+    def choose_node(cls, region):
+        debug(region.get_text_map())
+        candidate_list = region.unbuilt_nodes
         debug("This is the starting candidate_list: {}".format(candidate_list))
         if not candidate_list:
             debug("Out of room for {}, but these rooms built:".format(cls))
-            debug([i.location for i in registry.node_list])
+            debug([i.location for i in region.node_list])
             raise NotEnoughNodes
         debug("must choose a node from a list this long:{}".format(len(candidate_list)))
         for preference in cls.preference_list:
@@ -194,14 +195,14 @@ class CaveEntrance(Entrance):
 
     def generate_items(self):
         super().generate_items()
-        Item(location=self,
-             name=Name(a=["animal"],
-                       n=["skulls", "skull"],)
-             )
-        Item(location=self,
-             name=Name(a=["animal"],
-                       n=["hides"])
-             )
+        Item(
+            location=self,
+            name=Name("animal skulls", "animal skull skulls")
+        )
+        Item(
+            location=self,
+            name=Name("animal hides")
+        )
 
 
 class CaveFiller(GeneratedRoom):
@@ -260,11 +261,16 @@ class BossQuarters(GeneratedRoom):
                        AvoidEntrance(), ]
 
     def generate_items(self):
-        self.reg.make_boss(location=self)
+        # self.reg.make_boss(location=self)
         d = self.decor_dict
-        d["bed"] = Thing(location=self, names=["wooden bed", "bed"])
-        d["curtains"] = Item(location=self,
-                             names=["bead curtains", "curtains"])
+        d["bed"] = Thing(
+            location=self,
+            names=["wooden bed", "bed"],
+        )
+        d["curtains"] = Item(
+            location=self,
+            names=["bead curtains", "curtains"],
+        )
 
 
 class HealthPotion(FoodItem):
@@ -303,6 +309,10 @@ class Kitchen(GeneratedRoom):
         d["knife"] = knife
 
 
+class BanditKitchen(Kitchen):
+    pass
+
+
 class MessHall(GeneratedRoom):
     map_letter = "MH"
     preference_list = [DesiredNeighbor(Kitchen),
@@ -312,6 +322,22 @@ class MessHall(GeneratedRoom):
         d = self.decor_dict
         d["table"] = Thing(location=self, names=["table"])
         d["scraps"] = Item(location=self, names=["scraps", "debris"])
+
+
+class BanditMess(MessHall):
+    preference_list = [DesiredNeighbor(BanditKitchen)]
+
+    def generate_items(self):
+        d = self.decor_dict
+        d["table"] = Thing(self, "table")
+        d["crate"] = Thing(self, Name("stool", "stool crate cushion bag"))
+
+
+class BanditBarracks(Barracks):
+    def generate_items(self):
+        d = self.decor_dict
+        d["bedroll"] = Thing(self, "bedroll")
+        d["lamp"] = Item(self, Name("lamp" "lamp lantern"))
 
 
 class Prison(GeneratedRoom):

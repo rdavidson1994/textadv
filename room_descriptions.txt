@@ -49,6 +49,31 @@ This room must be the private quarters of the kobolds' leader.
 This room appears to be the kobolds' sleeping quarters.
 {bed: Small makeshift beds are strewn haphazardly around the room, emanating their owners' unpleasant scent.}
 
+@BanditBarracks
+The brigands have made their barracks here.
+{bedroll: Bedrolls and sleeping bags are arranged on the floor.
+    {lamp:, and a small oil lamp stands in the rough center of the room, shedding dim orange light.}
+}
+
+@BanditKitchen
+This room serves as the bandits' kitchen and pantry.
+{crate: Crates are stacked along one wall to serve as an improvised counter,
+    {ration:
+        Some empty, but some full of dried meats, preserves, and other rations -
+        likely pilfered from passing caravans
+    }
+}
+
+@BanditMess
+The bandits must take their meals in this room.
+{table:
+    A low wooden table sits in the center.
+    {crate:
+        , with various crates and bags set up around it to serve as stools and cushions.
+    }
+}
+
+
 @MessHall
 This rectangular room appears to be a dining area.
 In the center of the room, a ring shape has been mined out from the floor.

@@ -1,5 +1,7 @@
 import os
 from itertools import groupby
+
+import location
 import phrase
 import parsing
 import game_object
@@ -12,9 +14,9 @@ from direction import north,south,east,west,up,down
 #logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
 my_schedule = schedule.Schedule()
-plains = game_object.Location(description="You are standing in field of grass.")
-house = game_object.Location(description="You are in a house.")
-stronghold = game_object.Location(description="You are in a stronghold")
+plains = location.Location(description="You are standing in field of grass.")
+house = location.Location(description="You are in a house.")
+stronghold = location.Location(description="You are in a stronghold")
 
 sword = game_object.Item(location=plains,
                          name="iron longsword",

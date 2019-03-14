@@ -21,6 +21,7 @@ class Direction:
     def __str__(self):
         return self.name
 
+
 north = Direction("north", "n", (0, 1))
 south = Direction("south", "s", (0, -1), opposite=north)
 east = Direction("east", "e", (1, 0))

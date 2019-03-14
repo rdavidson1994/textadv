@@ -2,6 +2,7 @@ import logging
 # logging.basicConfig(level=logging.DEBUG,format='%(message)s')
 from math import sqrt, floor
 
+import location
 import mixins
 import re
 from random import randint, choice
@@ -220,9 +221,8 @@ class Action(metaclass=ActionMeta):
         return out
 
 
-ZeroTargetAction = Action  # just to display the fact that the
-
-
+ZeroTargetAction = Action
+# just to display the fact that the
 # base Action class is a fully implemented foundation for actions
 # with no targets, not just an abstract class.
 
@@ -304,11 +304,11 @@ class Map(DetailAction):
     def affect_game(self):
         a = self.actor
         try:
-            registry = a.location.map_node.registry
+            region = a.location.map_node.region
         except AttributeError:
             a.ai.display("No map is available.")
         else:
-            a.ai.display(registry.get_text_map(a))
+            a.ai.display(region.get_text_map(a))
 
 
 class Verbose(DetailAction):
@@ -893,24 +893,24 @@ class DestinationRoutine(ActionListRoutine, ZeroTargetAction):
     home_node = None
     map_ = None
 
-    # TODO: Actions should ask regs for paths between *locations*, not nodes.
-
     def build_portal_list(self):
         raise NotImplementedError
 
     def build_action_list(self):
-        try:
-            self.home_node = self.actor.location.map_node
-        except AttributeError:
-            return []
-        self.map_ = self.home_node.registry
         portal_list = self.build_portal_list()
         return [Enter(self.actor, portal) for portal in portal_list]
 
 
 class WalkToEntranceRoutine(DestinationRoutine):
+    # def build_portal_list(self):
+    #     return self.map_.path_to_entrance(self.home_node)
+
     def build_portal_list(self):
-        return self.map_.path_to_entrance(self.home_node)
+        try:
+            return self.actor.location.path_to_entrance()
+        except AttributeError:
+            print(f"Warning: no path from {self.actor.location}")
+            return []
 
 
 class LeaveDungeonRoutine(Routine, ZeroTargetAction):
@@ -934,13 +934,19 @@ class WalkToLocationRoutine(DestinationRoutine):
         self.destination = destination
         super().__init__(*args, **kwargs)
 
+    # def build_portal_list(self):
+    #     return self.map_.path_to_location(self.actor.location, self.destination)
+
     def build_portal_list(self):
-        return self.map_.path_to_location(self.actor.location, self.destination)
+        return self.actor.location.path_to_location(self.destination)
 
 
 class WalkToRandomRoutine(DestinationRoutine):
+    # def build_portal_list(self):
+    #     return self.map_.path_to_random(self.home_node)
+
     def build_portal_list(self):
-        return self.map_.path_to_random(self.home_node)
+        return self.actor.location.wander_destination()
 
 
 class DirectionMoveRoutine(SingleActionRoutine, ZeroTargetAction):
@@ -1016,7 +1022,7 @@ if __name__ == "__main__":
     import actor
     import game_object
 
-    place = game_object.Location()
+    place = location.Location()
     dude = actor.Hero(location=place)
     key = game_object.Item(location=dude, name="key")
     cage = game_object.Cage(location=place, name="cage", key=key)

@@ -14,16 +14,18 @@ class Actor(game_object.Thing):
         super().__init__(*args, **kwargs)
         self.physical = False
         self.awake = True
+        self.alive = True
         self.traits.update({"actor", "listener"})
         self.scheduled_event = None
         self.ai = None
         self.actor_strategy_dict = dict()
         # self.action_queue = list()
         self.timer = 0
-        if self.schedule is None:
-            self.schedule = schedule.DefaultSchedule()
 
-        self.schedule.add_actor(self)
+        assert self.schedule is not None or self.location is None
+        # upon creation, actors in the world should have a schedule
+        if self.schedule:
+            self.schedule.add_actor(self)
         self.free_action = True
 
     def attempt_action(self, action):
@@ -45,6 +47,7 @@ class Actor(game_object.Thing):
         self, new_location, coordinates=None, keep_arranged=False
     ):
         # This is pretty slow! Probably don't do this
+        assert self.schedule is not None
         super().change_location(new_location, coordinates, keep_arranged)
         for item in new_location.things:
             if new_location.line_of_sight(self,item):
@@ -53,6 +56,11 @@ class Actor(game_object.Thing):
     def vanish(self):
         self.schedule.remove_actor(self)
         super().vanish()
+
+    def materialize(self, location, coordinates=None):
+        self.schedule = location.schedule
+        self.schedule.add_actor(self)
+        super().materialize(location, coordinates)
 
     def cancel_actions(self):
         self.schedule.cancel_actions(self)
@@ -86,6 +94,9 @@ class Actor(game_object.Thing):
 
     def set_timer(self, time, keyword):
         self.schedule.set_timer(self, time, keyword)
+
+    def set_callback_timer(self, time, callback):
+        self.schedule.set_timer(self, time, callback=callback)
 
     def hear_timer(self, keyword):
         pass
@@ -141,12 +152,10 @@ class Person(Actor):
             item.change_location(corpse)
 
     def create_head(self):
-        adjectives = [self.name]
-        if self.name_object:
-            adjectives += self.name_object.nouns+self.name_object.adjectives
-        game_object.Item(location=self.location,
-                         name=Name(adjectives,
-                             "head"))
+        game_object.Item(
+            location=self.location,
+            name=self.name_object+Name("head")
+        )
 
     def pass_out(self, show_message=True):
         if self.awake:
@@ -183,6 +192,7 @@ class Person(Actor):
         else:
             text = self.name + " has died."
         self.location.show_text_to_hero(text)
+        self.alive = False
         self.vanish()
 
     def get_fatigue_multiplier(self, decay_rate=0.008):
@@ -306,10 +316,10 @@ class Prisoner(Person):
         self.ai = ai.PrisonerAI(self)
 
 
-class KoboldActor(Person):
+class SquadActor(Person):
     def __init__(self, *args, **kwargs):
         Person.__init__(self, *args, **kwargs)
-        self.ai = ai.KoboldAI(self)
+        self.ai = ai.SquadAI(self)
         self.traits.add("kobold")
 
 

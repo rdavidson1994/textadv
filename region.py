@@ -1,6 +1,9 @@
-from random import random, randint, sample, shuffle
+from random import random, randint, sample, shuffle, choice
+
+import location
 from direction import north, south, east, west
 import spells
+from name_object import Name
 from vector import Vector
 import dungeonrooms
 import logging
@@ -29,10 +32,12 @@ class InfiniteDeck:
             raise StopIteration
 
 
-direction_vector = {'n': Vector((0, 1)),
-                    's': Vector((0, -1)),
-                    'e': Vector((1, 0)),
-                    'w': Vector((-1, 0)), }
+direction_vector = {
+    'n': Vector((0, 1)),
+    's': Vector((0, -1)),
+    'e': Vector((1, 0)),
+    'w': Vector((-1, 0)),
+}
 
 
 class CreaturePolicy:
@@ -51,7 +56,7 @@ class CreaturePolicy:
 
     def get_creature(self, location=None):
         adjective = self.get_adjective()
-        name = dungeonrooms.Name(adjective, self.enemy_name)
+        name = Name(adjective)+self.enemy_name
         return self.enemy_type(location, name=name, sched=self.schedule)
 
 
@@ -73,12 +78,19 @@ class Region:
         def y(n):
             return n.coords[1]
 
-        x_bounds = [min(self.node_list, key=x),
-                    max(self.node_list, key=x), ]
-        y_bounds = [min(self.node_list, key=y),
-                    max(self.node_list, key=y), ]
-        return (x_bounds[0].coords[0], x_bounds[1].coords[0],
-                y_bounds[0].coords[1], y_bounds[1].coords[1],)
+        x_bounds = [
+            min(self.node_list, key=x),
+            max(self.node_list, key=x),
+        ]
+
+        y_bounds = [
+            min(self.node_list, key=y),
+            max(self.node_list, key=y),
+        ]
+        return (
+            x_bounds[0].coords[0], x_bounds[1].coords[0],
+            y_bounds[0].coords[1], y_bounds[1].coords[1],
+        )
 
     def get_text_map(self, viewer=None):
         """returns a matrix A[y][x] of characters"""
@@ -137,12 +149,23 @@ class Region:
             pass
         return out
 
-    def node_with_type(self, room_type):
-        candidates = [node for node in self.node_list
-                      if isinstance(node.location, room_type)]
+    def nodes_with_type(self, room_type):
+        return [
+            node for node in self.node_list
+            if isinstance(node.location, room_type)
+        ]
+
+    def node_with_type(self, room_type, randomize=False):
+        candidates = self.nodes_with_type(room_type)
         if not candidates:
             raise dungeonrooms.MissingNode
-        return candidates[0]
+        if randomize:
+            return choice(candidates)
+        else:
+            return candidates[0]
+
+    def room_with_type(self, room_type, randomize=False):
+        return self.node_with_type(room_type, randomize).location
 
     def register_node(self, node):
         self.node_list.append(node)
@@ -167,7 +190,7 @@ class Region:
     def build_blank_locations(self):
         for index, node in enumerate(self.node_list):
             if node.location is None:
-                location = dungeonrooms.Location(description="Place {}".format(index))
+                location = location.Location(description="Place {}".format(index))
                 node.set_location(location)
 
     def build_portals(self):
@@ -222,7 +245,7 @@ class Region:
         # g = current fastest path from from start to node
         # h = manhattan distance from node to goal
         # start --- g --- current ~~~ h ~~~ goal
-        open_set.add(current) # add current node to the to do list.
+        open_set.add(current)  # add current node to the to do list.
         while open_set:  # until no nodes are on to do list,
             # move to the "most promising" node on to do list (minimal h + g)
             current = min(open_set, key=lambda x: g.get(x, 0) + h.get(x, 0))
@@ -275,6 +298,8 @@ class Region:
     def path_to_location(self, start_location, goal_location):
         goal = goal_location.map_node
         start = start_location.map_node
+        if goal is None or start is None:
+            raise AttributeError
         return self.path_to_goal(start, goal)
 
     def get_rally_node(self):
@@ -332,9 +357,11 @@ class Caves(Region):
                 dungeonrooms.debug(self.get_text_map())
         else:
             raise Exception  # I generated 100 maps, and none worked.
-        self.build_locations(essential = self.essential_rooms,
-                             optional = self.optional_rooms,
-                             filler = self.filler_rooms, )
+        self.build_locations(
+            essential=self.essential_rooms,
+            optional=self.optional_rooms,
+            filler=self.filler_rooms,
+        )
         self.build_portals()
         # self.create_inhabitants()
 
@@ -371,6 +398,11 @@ class Caves(Region):
         for node in self.node_list:
             if node.location.is_rally:
                 return node
+        else:
+            return self.origin
+
+    def get_rally_location(self):
+        return self.get_rally_node().location
 
     def build_locations(self, essential=None, optional=None, filler=None):
         self.unbuilt_nodes = [n for n in self.node_list if not n.is_entrance()]
@@ -384,7 +416,9 @@ class Caves(Region):
                 try:
                     chosen_node = room_type.choose_node(self)
                 except dungeonrooms.NotEnoughNodes:
-                    dungeonrooms.debug("Out of nodes. Ending optional room creation.")
+                    dungeonrooms.debug(
+                        "Out of nodes. Ending optional room creation."
+                    )
                     break
                 self.build_room(room_type, chosen_node)
         self.build_blank_locations()
@@ -401,6 +435,19 @@ class Caves(Region):
             # adjective = self.enemy_adjectives[i]
             inhabitant = self.make_enemy(loc)
             self.inhabitants.add(inhabitant)
+
+    def random_location(self):
+        while True:
+            node = choice(self.node_list)
+            location = node.location
+            if location.is_entrance():
+                continue
+            else:
+                return location
+
+    def clear_inhabitants(self):
+        for actor in self.inhabitants:
+            actor.die()
 
 
 class EmptyCaves(Caves):
@@ -420,8 +467,8 @@ class EmptyCaves(Caves):
 #                         "filthy", "pale", "short", ]
 #
 #     def make_enemy(self, location=None, adjective=""):
-#         name = Name(adjective, "kobold")
-#         return actor.KoboldActor(location, name=name, sched=self.schedule)
+#         name = LegacyName(adjective, "kobold")
+#         return actor.SquadActor(location, name=name, sched=self.schedule)
 #
 #     def make_boss(self, location=None):
 #         boss = actor.Person(location=location,
@@ -429,15 +476,22 @@ class EmptyCaves(Caves):
 #                            sched=self.schedule)
 #         boss.combat_skill = 75
 #         boss.ai = ai.WanderingMonsterAI(boss)
-#         spear = Item(location=boss, name=Name(["crude"],["sword"]))
+#         spear = Item(location=boss, name=LegacyName(["crude"],["sword"]))
 #         spear.damage_type = "sharp"
 #         spear.damage_mult = 3
 #         return boss
 
 
 class EmptyTomb(Caves):
-    essential_rooms = (dungeonrooms.TombEntrance, dungeonrooms.Crypt)
-    optional_rooms = (dungeonrooms.OfferingRoom, dungeonrooms.Temple, dungeonrooms.TombSanctum)
+    essential_rooms = (
+        dungeonrooms.TombEntrance,
+        dungeonrooms.Crypt,
+    )
+    optional_rooms = (
+        dungeonrooms.OfferingRoom,
+        dungeonrooms.Temple,
+        dungeonrooms.TombSanctum,
+    )
     filler_rooms = (dungeonrooms.CaveFiller,)
     breed_count = 2
 
@@ -451,7 +505,7 @@ class EmptyTomb(Caves):
 #     breed_count = 2
 #
 #     def make_enemy(self, location=None, adjective=""):
-#         name = Name(adjective, "ghoul")
+#         name = LegacyName(adjective, "ghoul")
 #         ghoul = actor.Person(location, name=name, sched=self.schedule)
 #         ai.WanderingMonsterAI(ghoul)
 #         ghoul.body = body.UndeadBody(ghoul)
@@ -460,10 +514,10 @@ class EmptyTomb(Caves):
     
 
 class Connection:
-    def __init__(self, registry, start, end, direction):
-        self.registry = registry
+    def __init__(self, region, start, end, direction):
+        self.region = region
         self.portal = None
-        registry.register_connection(self)
+        region.register_connection(self)
         self.start = start
         self.end = end
         start.connected_nodes.append(end)
@@ -498,24 +552,25 @@ class Connection:
 class Node:
     number_of_nodes = 0
 
-    def __init__(self, registry, vector, parent=None, travel_d=None):
+    def __init__(self, region, vector, parent=None, travel_d=None):
         self.location = None
         self.vector = vector
         self.coords = vector.coords
-        self.registry = registry
+        self.region = region
         self.connected_directions = []
         self.connected_nodes = []
         self.connections = []
-        registry.register_node(self)
+        region.register_node(self)
         if parent is not None:
-            Connection(self.registry, parent, self, travel_d)
+            Connection(self.region, parent, self, travel_d)
 
     def set_location(self, loc):
         self.location = loc
         loc.map_node = self
 
+
     def distance(self, other_node):
-        return len(self.registry.a_star(self, other_node))
+        return len(self.region.a_star(self, other_node))
 
     def manhattan(self, other_node):
         x = self.coords
@@ -524,7 +579,7 @@ class Node:
 
     def distance_from_type(self, room_type):
         try:
-            other_node = self.registry.node_with_type(room_type)
+            other_node = self.region.node_with_type(room_type)
         except IndexError:
             distance = 0  # zero distance, if there's no match
         else:
@@ -532,7 +587,7 @@ class Node:
         return distance
 
     def distance_from_entrance(self):
-        entrance = self.registry.get_entrance_node()
+        entrance = self.region.get_entrance_node()
         return self.distance(entrance)
 
     def is_entrance(self):
@@ -554,13 +609,15 @@ class Node:
             if d in self.connected_directions:
                 pass
             target_vector = self.vector + direction_vector[d.letter]
-            found_node = self.registry.node_with_vector(target_vector)
+            found_node = self.region.node_with_vector(target_vector)
             if found_node:
-                found_con = self.registry.connection_with_endpoints(self, found_node)
-                if found_con == None and random() < 0.5:
-                    new_connection = Connection(self.registry, self, found_node, d)
+                found_con = self.region.connection_with_endpoints(
+                    self, found_node
+                )
+                if found_con is None and random() < 0.5:
+                    Connection(self.region, self, found_node, d)
             else:
-                target_node = Node(self.registry, target_vector, self, d)
+                Node(self.region, target_vector, self, d)
 
 
 def a_star_test():
@@ -614,10 +671,10 @@ if __name__ == "__main__":
             if not isinstance(node.location, dungeonrooms.CaveEntrance):
                 break
         loc = node.location
-        name = dungeonrooms.Name(st, "kobold")
-        zom = actor.KoboldActor(loc,
-                                name=name,
-                                sched=my_schedule, )
+        name = dungeonrooms.Name(st)+"kobold"
+        zom = actor.SquadActor(loc,
+                               name=name,
+                               sched=my_schedule, )
         monsters.append(zom)
     debug(reg.get_text_map())
     john = actor.Hero(start_location, name="john", sched=my_schedule)
@@ -630,9 +687,7 @@ if __name__ == "__main__":
     john.body.mana = 50
     john.body.max_mana = 50
     sword = dungeonrooms.Item(location=john,
-                              name=dungeonrooms.Name(a=["iron", "long"],
-                                                     n=["longsword", "sword"]),
-                              )
+                              name=dungeonrooms.Name("iron sword"),)
     sword.damage_type = "sharp"
     sword.damage_mult = 3
     my_parser = john.ai

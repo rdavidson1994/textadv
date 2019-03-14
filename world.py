@@ -1,6 +1,7 @@
 import actor
 import building
 import game_object
+import location
 import name_object
 import phrase
 import schedule
@@ -8,17 +9,55 @@ import sites
 import spells
 from direction import north, south, east, west, up, down
 from wide import Location
+import population
+
+
+def make_player(location, coordinates, landmarks=set(), use_web_output=False):
+    john = actor.Hero(
+        location=location,
+        name="john",
+        coordinates=coordinates
+    )
+    my_parser = john.ai
+    my_parser.web_output = use_web_output
+    john.view_location()
+    john.known_landmarks = set(landmarks)
+    john.spells_known = {spells.Shock, spells.Fireball}
+    john.body.max_mana = 50
+    john.body.mana = 50
+    sword = game_object.Item(
+        location=john,
+        name=name_object.Name("iron sword"),
+    )
+    sword.damage_type = "sharp"
+    sword.damage_mult = 3
+    phrase.QuitPhrase(my_parser, ["quit", "exit"])
+    phrase.InventoryPhrase(my_parser, ["i", "inventory"])
+    return john
 
 
 class World:
-
-    def __init__(self, use_web_output = False, save_manager=None):
-        self.directions = [north, south, east, west, up, down]
+    def __init__(self, save_manager=None):
         self.save_manager = save_manager
+        self.schedule = schedule.Schedule()
 
-        plains = Location(description="You stand in a grassy field")
+    def save(self):
+        return self.save_manager.save(self)
 
-        my_schedule = schedule.Schedule()
+    def run_game(self, duration=None):
+        self.schedule.run_game(duration)
+
+
+class Static(World):
+    def __init__(self, use_web_output=False, save_manager=None):
+        super().__init__(save_manager=save_manager)
+        self.directions = [north, south, east, west, up, down]
+
+        plains = Location(
+            description="You stand in a grassy field",
+            sched=self.schedule,
+        )
+
         caves_portal = game_object.PortalEdge.free_portal(
             location=plains,
             direction=down,
@@ -26,17 +65,19 @@ class World:
             name="ladder",
         )
         cave_site = sites.Cave(
-            sched=my_schedule,
+            sched=self.schedule,
             entrance_portal=caves_portal.target
         )
         cave_site.add_morph(sites.KoboldHabitation())
+        cave_site.add_population(population.Kobold())
+        # cave_site.add_morph(sites.GhoulHabitation())
         cave_site.update_region()
-        caves_name = name_object.Name(a="kobold", n=["cave", "caves"])
+        caves_name = name_object.Name("kobold caves")
         caves_landmark = caves_portal.source.create_landmark(name=caves_name)
 
-        town = game_object.Location(
+        town = location.Location(
             name="town",
-            description ="You are in a very placeholde-like town"
+            description ="You are in a very placeholder-like town"
         )
         town_portal = game_object.PortalEdge.free_portal(
             location=plains,
@@ -45,44 +86,15 @@ class World:
             name="gate"
         )
         town_portal.set_target_location(town)
-        town_name = name_object.Name("big", "town")
-        building.WeaponShop(town, sched=my_schedule)
+        town_name = name_object.Name("big town")
+        building.WeaponShop(town, sched=self.schedule)
         town_landmark = town_portal.source.create_landmark(name=town_name)
-        john = actor.Hero(
-            plains,
-            name="john",
-            sched=my_schedule,
-            coordinates=(15, 15)
-        )
-        my_parser = john.ai
-        my_parser.web_output = use_web_output
-        john.view_location()
-        john.known_landmarks = {town_landmark, caves_landmark}
-        john.spells_known = {spells.Shock, spells.Fireball}
-        john.body.max_mana = 50
-        john.body.mana = 50
-        sword = game_object.Item(
-            location=john,
-            name=name_object.Name(
-                a=["iron", "long"],
-                n=["longsword", "sword"]
-            ),
-        )
-        sword.damage_type = "sharp"
-        sword.damage_mult = 3
-        phrase.QuitPhrase(my_parser, ["quit", "exit"])
-        phrase.InventoryPhrase(my_parser, ["i", "inventory"])
+        landmarks = {caves_landmark, town_landmark}
+        john = make_player(plains, (15, 15), landmarks, use_web_output)
         if self.save_manager:
             phrase.SpecialPhrase(
                 callback=self.save,
-                parser=my_parser,
+                parser=john.ai,
                 synonyms=["<<save>>"]
             )
 
-        self.schedule = my_schedule
-
-    def save(self):
-        return self.save_manager.save(self)
-
-    def run_game(self, duration=None):
-        self.schedule.run_game(duration)

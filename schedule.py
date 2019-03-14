@@ -23,7 +23,7 @@ class Event:
 class TimerEvent(Event):
     def __init__(self, schedule, actor, time, keyword=None, callback=None):
         self.keyword = keyword
-        self.callback = None
+        self.callback = callback
         self.actor = actor
         self.schedule = schedule
         self.time = time + schedule.current_time
@@ -103,8 +103,8 @@ class Schedule:
         self.new_stopped_actors = list()
         self.end_game = False
 
-    def set_timer(self, actor, time, keyword=""):
-        TimerEvent(self, actor, time, keyword)
+    def set_timer(self, actor, time, keyword=None, callback=None):
+        TimerEvent(self, actor, time, keyword, callback)
 
     def add_event(self, new_event):
         if new_event.is_instant:
@@ -122,10 +122,13 @@ class Schedule:
 
     def add_actor(self, actor):
         self.actors.append(actor)
-        self.stopped_actors.append(actor)
+        if actor not in self.stopped_actors:
+            self.stopped_actors.append(actor)
 
     def remove_actor(self, actor):
         self.actors.remove(actor)
+        self.event_list = [e for e in self.event_list if e.actor != actor]
+        actor.scheduled_event = None
 
     def cancel_actions(self, actor):
         e = actor.scheduled_event
@@ -169,7 +172,8 @@ class Schedule:
         ):
             if self.stopped_actors:
                 for actor in self.stopped_actors:
-                    self.grant_action(actor)
+                    if actor in self.actors:
+                        self.grant_action(actor)
                 self.stopped_actors = list()
             event = self.event_list.pop()
             if event.actor in self.actors:

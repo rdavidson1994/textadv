@@ -1,4 +1,5 @@
 import random
+import name_object
 
 from math import sqrt
 
@@ -76,14 +77,19 @@ class NameMaker:
             cutoff = 0.25+1/syllables
             if price < cutoff:
                 accepted = True
-            else:
-                print(f"rejected: {''.join(pieces)}")
-                pass
         return "".join(pieces)
 
 
+def make_string(syllables=None, name_maker=NameMaker(), raw_output=True):
+    string = name_maker.create_word(syllables)
+    if raw_output:
+        return string
+    else:
+        return name_object.Name(string)
+
+
 def make_name(syllables=None, name_maker=NameMaker()):
-    return name_maker.create_word(syllables)
+    return make_string(syllables, name_maker, False)
 
 
 if __name__ == "__main__":

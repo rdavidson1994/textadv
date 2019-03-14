@@ -1,3 +1,4 @@
+import location
 import schedule
 import actor
 import game_object
@@ -10,8 +11,8 @@ import phrase
 class Test:
     def __init__(self):
         self.schedule = schedule.Schedule()
-        self.street = game_object.Location(name="street",
-                                           description="You are outside.")
+        self.street = location.Location(name="street",
+                                        description="You are outside.")
 
         self.hero = actor.Hero(self.street, name="john", sched=self.schedule)
         self.parser = self.hero.ai
@@ -25,7 +26,7 @@ class Test:
 class Building(Test):
     def __init__(self):
         super().__init__()
-        self.house = game_object.Location(name="shop", description="You are inside.")
+        self.house = location.Location(name="shop", description="You are inside.")
         self.portal = game_object.Door(self.street, self.house)
         # self.portal = thing.PortalEdge(locations=(self.street, self.house),
         #                                directions=(direc.s, direc.n), )
@@ -35,5 +36,5 @@ class Town(Test):
     def __init__(self):
         super().__init__()
         desc = "You are inside the guardhouse."
-        self.guardhouse = game_object.Location(description=desc)
+        self.guardhouse = location.Location(description=desc)
         self.portal = game_object.Door(self.street, self.house)

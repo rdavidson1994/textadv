@@ -1,9 +1,9 @@
-from action import SingleTargetAction, ZeroTargetAction
+from action import SingleTargetAction, ZeroTargetAction, Action
 from random import randint
 from verb import StandardVerb
 
 
-class Spell:
+class Spell(Action):
     class VerbClass(StandardVerb):
         match_strings = ["cast? VERB",
                          "cast? VERB on? TARGET",
@@ -16,7 +16,7 @@ class Spell:
             else:
                 return super().match_quality(i)
 
-    stamina_cost = 20
+    stamina_cost = 5
 
     def is_valid(self):
         try:
@@ -35,6 +35,7 @@ class Spell:
         if len(self.target_list) > 0:
             out += " on"
         return out
+
 
 class InvalidSpell(Spell, ZeroTargetAction):
     synonyms = ["hocus pocus"]
@@ -61,6 +62,9 @@ class AOESpell(Spell, ZeroTargetAction):
             if actor != self.actor or self.affects_caster:
                 self.spell_effect(actor)
 
+    def spell_effect(self, other):
+        pass
+
 
 class StunWave(AOESpell):
     synonyms = ["stun wave", "stunwave"]
@@ -78,5 +82,5 @@ class Fireball(AOESpell):
     stamina_cost = 20
 
     def spell_effect(self, other):
-        damage = randint(50,100)
+        damage = randint(50, 100)
         other.take_damage(damage, "fire")

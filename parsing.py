@@ -1,4 +1,5 @@
 import errors
+import location
 import menu_wrap
 import phrase
 import string
@@ -48,7 +49,7 @@ class Parser(AI):
             return [i for i in possibility_list if i in new_list]
         else:
             # If the input doesn't make sense as a name, try it as a new command
-            self.logged_input = new_name
+            self.logged_action = self.execute_string(new_name)
             return []
 
     def get_local_action(self):
@@ -102,10 +103,7 @@ class Parser(AI):
     def hear_announcement(self, action):
         super().hear_announcement(action)
         if action.actor == self.actor:
-            if (
-                    action.moves_actor()
-                    and not action.quiet
-            ):
+            if action.moves_actor() and not action.quiet:
                 new_location = self.actor.location
                 if self.verbose or new_location not in self.visited_locations:
                     full_text = True
@@ -156,7 +154,7 @@ class Parser(AI):
         if len(lst) == 1:
             return lst[0]
         else:
-            if not self.logged_input:
+            if not self.logged_action:
                 if kind == "TARGET":
                     self.display("There is no {} here".format(name))
                 elif kind == "LANDMARK":
@@ -216,7 +214,7 @@ if __name__ == "__main__":
     import game_object
     import actor
 
-    loc = game_object.Location()
+    loc = location.Location()
     dude = actor.Hero(loc)
     sword = game_object.Item(location=loc, name="sword", other_names=["iron sword"])
     bsword = game_object.Item(location=loc, name="sword", other_names=["bronze sword"])
