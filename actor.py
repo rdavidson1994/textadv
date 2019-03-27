@@ -53,6 +53,13 @@ class Actor(game_object.Thing):
             if new_location.line_of_sight(self,item):
                 self.ai.see_thing(item)
 
+    def change_coordinates(self, new_coordinates, keep_arranged=False):
+        self.change_location(self.location, new_coordinates, keep_arranged)
+
+    def move_to(self, other):
+        assert self.location == other.location
+        self.change_coordinates(other.coordinates)
+
     def vanish(self):
         self.schedule.remove_actor(self)
         super().vanish()
@@ -113,6 +120,7 @@ class Person(Actor):
         self.combat_skill = 50
         self.known_landmarks = set()
         self.body = body.Body(self)
+        self.get_health_report = self.body.get_health_report
         self.money = 0
 
     def hear_announcement(self, action):
@@ -123,6 +131,7 @@ class Person(Actor):
 
     def get_look_text(self, viewer=None):
         out = super().get_look_text()
+        out += self.get_health_report(viewer=viewer)
         if self.things:
             out += "\nInventory:\n"
             out += "\n".join([i.get_name(viewer) for i in self.things])
@@ -320,7 +329,6 @@ class SquadActor(Person):
     def __init__(self, *args, **kwargs):
         Person.__init__(self, *args, **kwargs)
         self.ai = ai.SquadAI(self)
-        self.traits.add("kobold")
 
 
 class Hero(Person):

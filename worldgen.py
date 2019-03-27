@@ -1,11 +1,19 @@
 from name_object import Name
-import schedule, actor, wide, action, namemaker, sites, game_object
+import schedule, actor, wide, action, namemaker
+import sites, game_object, body, dungeonrooms, errors
 import ai
 import direction
 from world import make_player
-from random import random
+from random import random, choice, shuffle
 from population import Population
-from abc import ABC
+from typing import List
+
+
+def set_choice(in_set):
+    try:
+        return choice(tuple(in_set))
+    except IndexError:
+        return None
 
 
 class TestAI(ai.AI):
@@ -35,7 +43,32 @@ class WorldAgent(actor.Actor):
             self.set_timer(self.update_period, self.update_keyword)
 
 
+class WorldEvents(WorldAgent):
+    def __init__(self, world_map):
+        super().__init__(sched=world_map.schedule)
+        self.world_map = world_map
+
+    def take_turn(self):
+        if random() < 1/300:
+            ghouls = GhoulHorde(
+                name=namemaker.make_name()+"ghouls",
+                location=self.world_map,
+                coordinates=self.world_map.random_point(),
+                target=None,
+            )
+            print(f"{ghouls.name} appeared")
+        if random() < 1/150:
+            kobolds = KoboldGroup(
+                name=namemaker.make_name()+"kobolds",
+                location=self.world_map,
+                coordinates=self.world_map.random_point(),
+                target=None,
+            )
+            print(f"{kobolds.name} emerged from underground")
+
+
 class Town(WorldAgent):
+    tomb_count = 0
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -45,12 +78,14 @@ class Town(WorldAgent):
             coordinates=self.coordinates,
             landmark_name=self.name_object+"city",
         )
+        self.traits.add("town")
 
     def take_turn(self):
         if self.destroyed:
             return
 
-        if random() < 1/100:
+        if random() < 1/200:
+            self.tomb_count += 1
             tomb_name = namemaker.make_name()
             print(f"{self.name} built a tomb named {tomb_name.get_text()}")
             tomb = sites.Tomb.at_point(
@@ -59,13 +94,6 @@ class Town(WorldAgent):
                 world_map.random_in_circle(self.coordinates, 5),
                 landmark_name=tomb_name+"tomb",
             )
-            tomb_roll = random()
-
-            # if tomb_roll<1/3:
-            #     tomb.add_morph(sites.KoboldHabitation())
-            # elif tomb_roll<2/3:
-            #     tomb.add_morph(sites.GhoulHabitation())
-            # assert tomb.schedule == self.schedule
 
         if random() < 1/1000:
             self.unrest += 20
@@ -84,74 +112,129 @@ class Town(WorldAgent):
             print(f"{self.name} had a bad harvest")
 
         if random() < (self.unrest/100)**2:
-            print(f"{self.name} spawned a bandit group @ unrest {self.unrest}")
-            BanditGroup(
-                name=namemaker.NameMaker().create_word(),
+            group = BanditGroup(
+                name=namemaker.make_name()+"gang",
                 target=self,
                 location=self.location,
                 coordinates=world_map.random_in_circle(self.coordinates, 5),
             )
+            print(f"{self.name} spawned {group.name} @ unrest {self.unrest}")
 
-        if self.unrest > 40 + random()*40:
+        if self.unrest > 60 + random()*40:
             print(f"{self.name} crumbled to ruin amid starvation and rioting.")
             self.destroyed = True
             return
 
 
-class PopulationAgent(WorldAgent, Population):
+class SubordinatePopulation(Population):
+    def __init__(self, agent):
+        super().__init__()
+        self.agent = agent
+
+    def build_actors(self):
+        self.actors = self.agent.build_actors()
+
+
+class PopulationAgent(WorldAgent):
+    site = None
+    population = None
+
     def __init__(self, *args, **kwargs):
-        Population.__init__(self)
-        WorldAgent.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
+        self.population = SubordinatePopulation(self)
 
     def vanish(self):
-        if self.site:
-            self.destroy()
+        self.change_site(None)
         WorldAgent.vanish(self)
 
+    def change_site(self, site):
+        if self.site:
+            self.site.remove_population(self.population)
+            if self.population.rendered:
+                self.population.hide_actors()
+        if site:
+            site.add_population(self.population)
+        self.site = site
 
-class BanditGroup(PopulationAgent):
-    # These are meant to be human bandits
-    # They are temporarily kobolds until I write better room descriptions
+    def build_actors(self) -> List[actor.Actor]:
+        pass
+
+
+class ExternalNuisance(PopulationAgent):
     def __init__(self, *args, target, **kwargs):
         super().__init__(*args, **kwargs)
         self.target = target
         self.power = 5
         self.number_of_members = 5
 
+    def site_preference(self, site):
+        return 0
+
+    def get_morph(self):
+        pass
+
     def take_turn(self):
-        if not self.site:
-            candidate_hideouts = self.location.sites(
-                center=self.coordinates,
-                radius=5,
+        if self.target is None or self.target.destroyed:
+            towns = self.location.things_with_trait(
+                "town", self.coordinates, 15
             )
-            for site in candidate_hideouts:
-                if site.allows_population(self):
-                    self.change_site(site)
-                    site.add_morph(sites.KoboldHabitation())
-                    site_name = site.landmark.name.get_text()
-                    print(f"The kobold group {self.name} took {site_name}")
-                    break
-        self.power -= 0.2
+            active_towns = set(t for t in towns if not t.destroyed)
+            self.target = set_choice(active_towns)
+            if self.target is None:
+                print(f"Having no suitable targets, {self.name} disbanded")
+                self.vanish()
+                return
+            print(f"{self.name} turned their eyes to {self.target.name}")
+            self.move_to(self.target)
+            if self.site:
+                print(f"{self.name} abandoned {self.site.get_name()}")
+                self.change_site(None)
+        if not self.site:
+            nearby_sites = self.location.sites(
+                center=self.coordinates,
+                radius=10,
+            )
+            candidate_sites = [
+                site for site in nearby_sites if site.allows_population(self)
+            ]
+            if not candidate_sites:
+                print(f"Finding no suitable home, {self.name} disbanded")
+                self.vanish()
+            else:
+                shuffle(candidate_sites)
+                site = max(candidate_sites, key=self.site_preference)
+                self.change_site(site)
+                site.add_morph(self.get_morph())
+                print(f"{self.name} took {site.get_name()}")
+
+        self.power -= 0.1
         if random() < 1/10 and not self.target.destroyed:
-            print(f"The kobold group {self.name} raided {self.target.name}")
-            self.target.unrest += self.power
-            self.power += 10/self.target.unrest
+            print(f"{self.name} attacked {self.target.get_name()}")
+            self.target.unrest += self.power/2
+            self.power += 4/self.target.unrest
         if self.power <= 0:
             self.vanish()
-            print(f"The kobold group {self.name} was disbanded")
+            print(f"{self.name} was disbanded")
+
+
+class BanditGroup(ExternalNuisance):
+    def get_morph(self):
+        return sites.BanditHabitation()
 
     def build_actors(self):
+        actors = []
         for m in range(self.number_of_members):
             if random() < 0.5:
                 weapon_kind = "sword"
                 damage_type = "sharp"
                 damage_mult = 2+self.power/10
+                title = "bandit swordsman"
             else:
                 weapon_kind = "mace"
                 damage_type = "blunt"
                 damage_mult = 3+self.power/10
+                title = "bandit maceman"
 
-            title = f"kobold {weapon_kind}sman"
             given_name = namemaker.make_name()
             name_and_title = given_name.add(title, template="{}, {}")
 
@@ -159,7 +242,7 @@ class BanditGroup(PopulationAgent):
                 location=None,
                 name=name_and_title
             )
-            self.actors.append(bandit)
+            actors.append(bandit)
 
             weapon = game_object.Item(
                 location=bandit,
@@ -167,6 +250,75 @@ class BanditGroup(PopulationAgent):
             )
             weapon.damage_type = damage_type
             weapon.damage_mult = damage_mult
+
+        return actors
+
+
+class GhoulHorde(ExternalNuisance):
+    def get_morph(self):
+        return sites.GhoulHabitation()
+
+    def site_preference(self, site):
+        if "tomb" in site.get_name():
+            return 1
+        else:
+            return 0
+
+    def build_actors(self):
+        adjectives = [
+            "skinny", "tall", "hairy", "filthy", "pale", "short",
+        ]
+        actors = []
+        for adjective in adjectives:
+            ghoul = actor.Person(name=Name(adjective + " ghoul"))
+            ai.WanderingMonsterAI(ghoul)
+            ghoul.body = body.UndeadBody(ghoul)
+            ghoul.combat_skill = 60
+            actors.append(ghoul)
+        return actors
+
+
+class KoboldGroup(ExternalNuisance):
+    adjectives = [
+        "skinny", "tall", "hairy", "filthy", "pale", "short",
+    ]
+
+    def get_morph(self):
+        return sites.KoboldHabitation()
+
+    @staticmethod
+    def boss_location_function(region):
+        try:
+            return region.room_with_type(
+                room_type=dungeonrooms.BossQuarters,
+                randomize=True
+            )
+        except errors.MissingNode:
+            return region.random_location()
+
+    def build_actors(self):
+        actors = []
+        for adjective in self.adjectives:
+            kobold = actor.SquadActor(
+                location=None,
+                name=Name(adjective) + "kobold"
+            )
+            kobold.traits.add("kobold")
+            actors.append(kobold)
+
+        boss = actor.Person(
+            location=None,
+            name=Name("kobold leader"),
+        )
+        boss.traits.add("kobold")
+
+        actors.append(boss)
+        boss.ai = ai.WanderingMonsterAI(boss)
+        sword = game_object.Item(location=boss, name=Name("crude sword"))
+        sword.damage_type = "sharp"
+        sword.damage_mult = 3
+        self.population.location_functions[boss] = self.boss_location_function
+        return actors
 
 
 if __name__ == "__main__":
@@ -176,7 +328,8 @@ if __name__ == "__main__":
         width=50,
         height=50,
     )
-    town_n = 6
+    WorldEvents(world_map)
+    town_n = 10
     cave_n = 24
     caves = [
         sites.Cave.at_point(
@@ -188,22 +341,19 @@ if __name__ == "__main__":
         for i in range(cave_n)
     ]
 
-
     towns = [
         Town(
-            name=namemaker.NameMaker().create_word(),
+            name=namemaker.make_name(),
             location=world_map,
             coordinates=world_map.random_point(),
         )
         for i in range(town_n)
     ]
     world_schedule.run_game(15000000)
-    for cave in caves:
-        cave.update_region()
 
     dude = make_player(
         location=world_map,
-        coordinates=(15, 15),
+        coordinates=world_map.random_point(),
         landmarks=set(town.site.landmark for town in towns),
         use_web_output=False,
     )

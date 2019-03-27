@@ -20,7 +20,10 @@ This wide wedge-shaped room slopes downward toward its apex, where the wall has 
 }
 
 @CaveEntrance
-You are standing in a rocky pit, which leads into an underground cave. The tight cave entrance is covered by hanging animal hides, which the kobolds seem to be using as
+You are standing in a rocky pit, which leads into an underground cave.
+
+@KoboldCaveEntrance
+The entrance is covered by hanging animal hides, which the kobolds seem to be using as
 curtains to keep out light.
 {animal skulls: On either side of the entrance is a small pile of animal skulls, apparently set out as a warning to intruders.}
 

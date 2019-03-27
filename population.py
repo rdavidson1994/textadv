@@ -1,5 +1,4 @@
 from name_object import Name
-import namemaker
 import ai
 import game_object
 import errors
@@ -11,7 +10,6 @@ import unittest
 class Population:
     built = False
     rendered = False
-    site = None
 
     def get_location(self, actor, region):
         try:
@@ -33,19 +31,6 @@ class Population:
         if not self.rendered:
             self.show_actors(region)
         self.rendered = True
-
-    def destroy(self):
-        if self.rendered:
-            self.hide_actors()
-        self.site.remove_population(self)
-
-    def change_site(self, site):
-        if self.site:
-            self.site.remove_population(self)
-            if self.rendered:
-                self.hide_actors()
-        site.add_population(self)
-        self.site = site
 
     def allows_other(self, population):
         return False
@@ -75,6 +60,16 @@ class Kobold(Population):
     def allows_other(self, population):
         return False
 
+    @staticmethod
+    def boss_location_function(region):
+        try:
+            return region.room_with_type(
+                room_type=dungeonrooms.BossQuarters,
+                randomize=True
+            )
+        except errors.MissingNode:
+            return region.random_location()
+
     def build_actors(self):
         for adjective in self.adjectives:
             kobold = actor.SquadActor(
@@ -92,18 +87,7 @@ class Kobold(Population):
         sword = game_object.Item(location=boss, name=Name("crude sword"))
         sword.damage_type = "sharp"
         sword.damage_mult = 3
-
-        def boss_location_function(region):
-            try:
-                return region.room_with_type(
-                    room_type=dungeonrooms.BossQuarters,
-                    randomize=True
-                )
-            except errors.MissingNode:
-                return region.random_location()
-
-        self.location_functions[boss] = boss_location_function
-
+        self.location_functions[boss] = self.boss_location_function
 
 class TestPopulation(unittest.TestCase):
     def test_hide_actors(self):

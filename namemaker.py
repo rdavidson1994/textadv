@@ -85,7 +85,7 @@ def make_string(syllables=None, name_maker=NameMaker(), raw_output=True):
     if raw_output:
         return string
     else:
-        return name_object.Name(string)
+        return name_object.Name(string, proper=True)
 
 
 def make_name(syllables=None, name_maker=NameMaker()):

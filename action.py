@@ -123,7 +123,8 @@ class Action(metaclass=ActionMeta):
     def check_traits(self):
         """Returns (Bool, String)
         Determines if things in target_list have the traits required of them for
-        the action to be performed. Returns True, "" if so, False, "explanation" otherwise.
+        the action to be performed.
+        Returns True, "" if so, False, "explanation" otherwise.
         """
         trait_lists = [self.target_traits, self.tool_traits]
 
@@ -335,11 +336,11 @@ class Diagnose(DetailAction):
             return "False", "You don't have a physical body."
 
     def get_success_string(self, viewer=None):
-        return self.actor.body.get_health_report()
+        return self.actor.get_health_report(viewer=viewer)
 
 
 class Examine(DetailAction, SingleTargetAction):
-    synonyms = ["x", "look at", "examine", "look"]
+    synonyms = ["x", "look at", "examine", "look", "l"]
 
     def get_success_string(self, viewer=None):
         return self.target.get_look_text(viewer)
@@ -921,7 +922,7 @@ class LeaveDungeonRoutine(Routine, ZeroTargetAction):
         if self.actor.location.has_trait("wide"):
             debug("ACTOR FLED TO WILDERNESS")
             return WildernessFlee(self.actor)
-        game_exits = self.actor.location.things_with_name("ladder")
+        game_exits = self.actor.location.things_with_name("slope")
         if game_exits:
             exit = next(iter(game_exits))
             return Enter(self.actor, exit)

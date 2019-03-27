@@ -43,8 +43,19 @@ class Parser(AI):
         s = ('There are multiple things called \"{name}\"'
              ' here. Which one do you mean?').format(name=name)
         self.display(s)
+        alphabet = string.ascii_lowercase
+
+        lookup = {}
+        for letter, thing in zip(alphabet, possibility_list):
+            self.display(
+                f"{letter}: {thing.get_name(self.actor)}"
+            )
+            lookup[letter] = thing
         new_name = self.input()
-        new_list = self.actor.get_targets_from_name(new_name)
+        try:
+            new_list = [lookup[new_name]]
+        except KeyError:
+            new_list = self.actor.get_targets_from_name(new_name)
         if new_list:
             return [i for i in possibility_list if i in new_list]
         else:

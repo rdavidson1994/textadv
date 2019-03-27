@@ -105,6 +105,22 @@ class TemplateParser:
         return out
 
 
+class ParserManager:
+    files_read = {}
+
+    @classmethod
+    def get_parser(cls, filename, key):
+        if filename not in cls.files_read:
+            with open(full_path(filename)) as f:
+                file_text = f.read()
+            templates = file_text.split("@")
+            templates.remove("")
+            pairs = [template.split(None, 1) for template in templates]
+            # noinspection PyTypeChecker
+            template_dict = dict(pairs)
+            cls.files_read[filename] = template_dict
+        return TemplateParser(cls.files_read[filename][key])
+
 class RoomTemplateParser(TemplateParser):
     with open(full_path("room_descriptions.txt")) as f:
         file_text = f.read()
@@ -155,7 +171,7 @@ def room_test():
     from dungeonrooms import TreasureRoom
     tr = TreasureRoom()
     tr2 = TreasureRoom()
-    rtp = RoomTemplateParser(tr)
+    rtp = ParserManager.get_parser("room_descriptions.txt", "TreasureRoom")
     print(rtp.full_parse())
     tr.decor_dict["chest"].change_location(tr2)
     print("Furnish test: "+str(tr.has_furnishing("chest")))
@@ -167,5 +183,5 @@ def apothecary_test():
     
 
 if __name__ == "__main__":
-    else_test()
+    room_test()
 

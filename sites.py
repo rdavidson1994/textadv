@@ -6,8 +6,10 @@ import actor
 import ai
 import body
 from name_object import Name
-from dungeonrooms import (TreasureRoom, Barracks, Kitchen, MeatChamber,
-                          MessHall, Prison, Apothecary, BossQuarters, )
+from dungeonrooms import (
+    TreasureRoom, Barracks, Kitchen, MeatChamber, MessHall, Prison, Apothecary,
+    BossQuarters, KoboldCaveEntrance, BanditBarracks, BanditMess, BanditKitchen,
+)
 from abc import ABC, abstractmethod
 from typing import Type
 
@@ -15,6 +17,7 @@ from typing import Type
 class Site:
     def __init__(self, sched=None, entrance_portal=None):
         self.schedule = sched
+        self.landmark = None
         if self.schedule is None:
             self.schedule = entrance_portal.schedule
         self.morphs = []
@@ -23,6 +26,14 @@ class Site:
         self.entrance_portal = entrance_portal
         entrance_portal.set_site(self)
         self.unused_morph_index = 0
+
+    def get_name(self, viewer=None):
+        try:
+            landmark = self.landmark
+        except AttributeError:
+            return "unnamed site"
+        else:
+            return landmark.name.get_text()
 
     def allows_population(self, population):
         return all(p.allows_other(population) for p in self.populations)
@@ -93,12 +104,12 @@ class TownSite(Site):
         return False
 
     def construct_base_region(self):
-        town = location.Location(
+        self.town = location.Location(
             name="town",
             description="You are in a very placeholder-like town"
         )
         self.entrance_portal.change_location(self.town)
-        building.WeaponShop(town, sched=self.schedule)
+        building.WeaponShop(self.town, sched=self.schedule)
         self.region = True
 
 
@@ -155,7 +166,7 @@ class Habitation(Morph):
 
 
 class KoboldHabitation(Habitation):
-    essential_rooms = (TreasureRoom, Barracks, Kitchen)
+    essential_rooms = (TreasureRoom, Barracks, Kitchen, KoboldCaveEntrance)
     optional_rooms = (MessHall, Prison, Apothecary, BossQuarters)
     enemy_number = 6
 
@@ -178,6 +189,10 @@ class KoboldHabitation(Habitation):
             spear.damage_type = "sharp"
             spear.damage_mult = 3
             return boss
+
+
+class BanditHabitation(Habitation):
+    essential_rooms = (BanditBarracks, BanditMess, BanditKitchen)
 
 
 class GhoulHabitation(Habitation):

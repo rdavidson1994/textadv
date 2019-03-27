@@ -65,8 +65,8 @@ class MaximizeFunction(Preference):
 
     def refined_list(self, candidate_list):
         best = max(candidate_list, key=self.profit)
-        return [node for node in candidate_list
-                if self.profit(node) == self.profit(best)]
+        return [candidate for candidate in candidate_list
+                if self.profit(candidate) == self.profit(best)]
 
 
 class AvoidRoom(MaximizeFunction):
@@ -85,13 +85,26 @@ class AvoidEntrance(MaximizeFunction):
         return node.distance_from_entrance()
 
 
+class ReplaceRoomType(MaximizeFunction):
+    def __init__(self, replaced_type, avoid=False):
+        self.replaced_type = replaced_type
+        self.avoid = avoid
+
+    def profit(self, node):
+        if isinstance(node.location, self.replaced_type):
+            if self.avoid:
+                return -1
+            else:
+                return 1
+        else:
+            return 0
+
+
 class GeneratedRoom(Location):
+    description_file = "room_descriptions.txt"
     preference_list = []
     basic_items = []
     basic_things = []
-    desired_exit_numbers = None
-    desired_neighbor = None
-    avoided_room = None
     is_rally = False
 
     def __repr__(self):
@@ -133,8 +146,13 @@ class GeneratedRoom(Location):
         else:
             basis_desc = ""
 
-        parser = parsetemplate.RoomTemplateParser(
-            self, newer_room=self.newer_location
+        # parser = parsetemplate.RoomTemplateParser(
+        #     self, newer_room=self.newer_location
+        # )
+
+        parser = parsetemplate.ParserManager.get_parser(
+            self.description_file,
+            self.__class__.__name__,
         )
 
         own_desc = parser.full_parse()
@@ -159,9 +177,9 @@ class GeneratedRoom(Location):
             refined_list = preference.refined_list(candidate_list)
             if refined_list:
                 candidate_list = refined_list
-                debug("this is the next candidate_list {} for {}".format(candidate_list, cls))
+                debug(f"this is the next candidate_list {candidate_list} for {cls}")
             else:
-                debug("unable to satisfy {} for {}".format(preference, cls.__name__))
+                debug(f"unable to satisfy {preference} for {cls.__name__}")
         debug([node.coords for node in candidate_list])
         chosen_node = choice(candidate_list)
         return chosen_node
@@ -193,6 +211,10 @@ class CaveEntrance(Entrance):
         for connection in self.map_node.connections:
             connection.build_portal(name="cave mouth")
 
+
+class KoboldCaveEntrance(Entrance):
+    preference_list = [ReplaceRoomType(Entrance)]
+
     def generate_items(self):
         super().generate_items()
         Item(
@@ -210,10 +232,7 @@ class CaveFiller(GeneratedRoom):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.adjective = choice(["narrow",
-                                 "wide",
-                                 "low",
-                                 "tall", ])
+        self.adjective = choice(["narrow", "wide", "low", "tall", ])
         self.noun = "room"
 
     def get_description(self, viewer=None):

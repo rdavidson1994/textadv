@@ -20,19 +20,24 @@ class Location(location.Location):
         out += "\nCoordinates: " + str(viewer.coordinates)
         return out
 
-    def sites(self, center=None, radius=None):
-        # If you specify a center/radius, you must specify both
-        entrances = set(
-            portal for portal in self.things_with_trait("portal")
-            if portal.edge.site is not None
-        )
+    def things_with_trait(self, trait, center=None, radius=None):
+        candidates = super().things_with_trait(trait)
         if center is not None and radius is not None:
-            return set(
-                portal.edge.site for portal in entrances
-                if self.distance(portal, center) < radius
+            out = set(
+                x for x in candidates
+                if self.distance(x, center) < radius
             )
         else:
-            return set(portal.edge.site for portal in entrances)
+            out = candidates
+        return out
+
+    def sites(self, center=None, radius=None):
+        # If you specify a center/radius, you must specify both
+        return set(
+            portal.edge.site for portal
+            in self.things_with_trait("portal", center, radius)
+            if portal.edge.site is not None
+        )
 
     def random_point(self):
         return (random.uniform(0, self.width),

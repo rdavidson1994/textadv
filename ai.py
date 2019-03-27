@@ -176,7 +176,12 @@ class SquadAI(AI):
         return self.Sighting(self.actor, thing)
 
     def share_enemy_knowledge(self, ally):
-        ally.ai.hear_enemy_knowledge(self.enemies)
+        try:
+            method = ally.ai.hear_enemy_knowledge
+        except AttributeError:
+            pass
+        else:
+            method(self.enemies)
 
     def hear_enemy_knowledge(self, updated_enemies):
         for enemy, sighting in updated_enemies.items():

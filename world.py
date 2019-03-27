@@ -62,7 +62,7 @@ class Static(World):
             location=plains,
             direction=down,
             coordinates=(15, 14),
-            name="ladder",
+            name="slope",
         )
         cave_site = sites.Cave(
             sched=self.schedule,

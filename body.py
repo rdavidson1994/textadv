@@ -5,6 +5,7 @@ try:
 except ImportError:
 #  on my work computer, scipy cannot be installed. This is a workaround.
     class norm:
+        @staticmethod
         def ppf(alpha, loc, scale):
             return -15     
 
@@ -47,17 +48,17 @@ class Body:
     def get_total_fatigue(self):
         return floor((self.short_fatigue + self.fatigue) / 4)
 
-    def get_health_report(self):
-        out = self.get_damage_report()
-        out += self.get_stamina_report()
-        out += self.get_skill_report()
+    def get_health_report(self, viewer=None):
+        out = self.get_damage_report(viewer=viewer)
+        out += self.get_stamina_report(viewer=viewer)
+        out += self.get_skill_report(viewer=viewer)
 
         if self.max_mana > 0:
-            mana = "You have {} mana remaining out of {}."
+            mana = "{}/{} mana remaining."
             out += mana.format(self.mana, self.max_mana)
         return out
 
-    def get_skill_report(self, verbose=False, alpha=0.1):
+    def get_skill_report(self, verbose=False, alpha=0.1, viewer=None):
         template = "Effective combat skill: {}\n"
         out = template.format(int(self.owner.get_attack_roll(weapon=None, min_=True)))
         mean = 80/2-30/2  # mean of parry roll - attack roll.
@@ -67,23 +68,35 @@ class Body:
         out += template.format(int(self.owner.get_parry_roll(min_=True) + margin_of_error))
         return out
 
-    def get_damage_report(self, verbose=False, alpha=0.2):
-        template = ("You have {} damage. "
-                    "Expect to be knocked out between {} and {}. ({}% CI)\n")
-        if self.damage != 0 or verbose:
-            out = template.format(self.damage,
-                                  self.inv_ko_cdf(alpha / 2),
-                                  self.inv_ko_cdf(1 - alpha / 2),
-                                  100 * (1 - alpha), )
-            bleed_template = "You are bleeding at a rate of {} damage per second.\n"
-            if self.bleeding_damage:
-                out += bleed_template.format(self.bleeding_damage * 2)
-        else:
-            out = ""
+    def get_damage_report(self, verbose=False, alpha=0.2, viewer=None):
+        you = self.owner.get_identifier(viewer)
+        out = ""
+        if self.damage > 0 or verbose:
+            if viewer == self.owner:
+                have = "have"
+                are = "are"
+            else:
+                have = "has"
+                are = "is"
+
+            left_bound = self.inv_ko_cdf(alpha / 2)
+            right_bound = self.inv_ko_cdf(1 - alpha / 2)
+            confidence = 100 * (1 - alpha)
+            out += (
+                f"{you} {have} {self.damage} damage. "
+                "Expect to be knocked out between "
+                f"{left_bound} and {right_bound}. ({confidence}% CI)\n"
+            )
+        if self.bleeding_damage:
+            out += (
+                f"{you} {are} bleeding at a rate of "
+                f"{self.bleeding_damage} damage per second.\n"
+            )
         return out
 
-    def get_stamina_report(self, verbose=False):
-        template = "You have {} fatigue. {} of this is short-term.\n"
+    def get_stamina_report(self, verbose=False, viewer=None):
+
+        template = "Fatigue: {}. {} of this is short-term.\n"
         if self.get_total_fatigue() or verbose:
             out = template.format(self.get_total_fatigue(),
                                   floor(self.short_fatigue / 4))

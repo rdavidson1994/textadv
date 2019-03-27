@@ -30,7 +30,7 @@ class Spell(Action):
         else:
             return super().is_valid()
 
-    def get_name(self, viewer):
+    def get_name(self, viewer=None):
         out = "cast" + self.possible_s(viewer) + " " + self.synonyms[0]
         if len(self.target_list) > 0:
             out += " on"

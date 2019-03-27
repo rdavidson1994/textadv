@@ -405,7 +405,8 @@ class Caves(Region):
         return self.get_rally_node().location
 
     def build_locations(self, essential=None, optional=None, filler=None):
-        self.unbuilt_nodes = [n for n in self.node_list if not n.is_entrance()]
+        self.unbuilt_nodes = list(self.node_list)
+        # self.unbuilt_nodes = [n for n in self.node_list if not n.is_entrance()]
         essential_deck = list(essential)
         optional_deck = list(optional)
         filler_deck = InfiniteDeck(filler)

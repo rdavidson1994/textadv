@@ -57,12 +57,18 @@ class Name:
         else:
             return cls(possible_str)
 
-    def __init__(self, display_string, definition_string=None):
+    def __init__(self, display_string, definition_string=None, proper=False):
+        self.proper = proper
         if definition_string is None:
             definition_string = display_string
         else:
             definition_string = definition_string
-        self.display_string = display_string
+
+        if self.proper:
+            self.display_string = display_string.capitalize()
+        else:
+            self.display_string = display_string
+
         if using_nltk:
             self.lemma_set = subset_names(definition_string)
         else:
