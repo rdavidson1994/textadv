@@ -46,24 +46,14 @@ class WorldAgent(actor.Actor):
 class WorldEvents(WorldAgent):
     def __init__(self, world_map):
         super().__init__(sched=world_map.schedule)
-        self.world_map = world_map
+        self.world = world_map
 
     def take_turn(self):
         if random() < 1/300:
-            ghouls = GhoulHorde(
-                name=namemaker.make_name()+"ghouls",
-                location=self.world_map,
-                coordinates=self.world_map.random_point(),
-                target=None,
-            )
+            ghouls = GhoulHorde.in_world(self.world)
             print(f"{ghouls.name} appeared")
         if random() < 1/150:
-            kobolds = KoboldGroup(
-                name=namemaker.make_name()+"kobolds",
-                location=self.world_map,
-                coordinates=self.world_map.random_point(),
-                target=None,
-            )
+            kobolds = KoboldGroup.in_world(self.world)
             print(f"{kobolds.name} emerged from underground")
 
 
@@ -166,6 +156,15 @@ class ExternalNuisance(PopulationAgent):
         self.target = target
         self.power = 5
         self.number_of_members = 5
+
+    @classmethod
+    def in_world(cls, world_map):
+        return cls(
+            name=namemaker.make_name()+"kobolds",
+            location=world_map,
+            coordinates=world_map.random_point(),
+            target=None,
+        )
 
     def site_preference(self, site):
         return 0

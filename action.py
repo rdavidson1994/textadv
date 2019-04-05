@@ -333,10 +333,32 @@ class Diagnose(DetailAction):
         if hasattr(self.actor, "body"):
             return super().check_geometry()
         else:
-            return "False", "You don't have a physical body."
+            return False, "You don't have a physical body."
 
     def get_success_string(self, viewer=None):
         return self.actor.get_health_report(viewer=viewer)
+
+
+class SpellReport(DetailAction):
+    synonyms = ["spells", "magic", "spells"]
+
+    def check_geometry(self):
+        if getattr(self.actor, "spells_known", False):
+            return super().check_geometry()
+        else:
+            return False, "You don't know any spells."
+
+    def get_success_string(self, viewer=None):
+        spells = self.actor.spells_known
+        spell_names = [spell.synonyms[0] for spell in spells]
+        mana_costs = [spell.mana_cost for spell in spells]
+        width = max(len(s) for s in spell_names)+1
+
+        return "\n".join(
+            f"{name+',': <{width}} mana cost {cost}"
+            for name, cost in zip(spell_names, mana_costs)
+        )
+
 
 
 class Examine(DetailAction, SingleTargetAction):
