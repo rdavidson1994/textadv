@@ -8,9 +8,10 @@ try:
     using_nltk = True
 except ImportError:
     wn = None
-    using_nltk = True
+    using_nltk = False
 
 def recursive_hypernyms(synset):
+    assert using_nltk
     next_hypernyms = synset.hypernyms()
     out = set(x for x in synset.lemma_names() if "_" not in x)
     for hypernym in next_hypernyms:
@@ -19,6 +20,7 @@ def recursive_hypernyms(synset):
 
 
 def best_synset(word):
+    assert using_nltk
     dots = word.count(".")
     if dots == 0:
         # "sword"
@@ -37,6 +39,7 @@ def best_synset(word):
 
 
 def subset_names(name_string):
+    assert using_nltk
     pieces = name_string.split(" ")
     out = set(p for p in pieces if "." not in pieces)
     for piece in pieces:
