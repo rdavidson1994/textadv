@@ -120,6 +120,7 @@ class Person(Actor):
         self.combat_skill = 50
         self.known_landmarks = set()
         self.body = body.Body(self)
+        self.spells_known = set()
         self.get_health_report = self.body.get_health_report
         self.money = 0
 
@@ -136,6 +137,10 @@ class Person(Actor):
             out += "\nInventory:\n"
             out += "\n".join([i.get_name(viewer) for i in self.things])
         return out
+
+    def increase_max_mana(self, amt):
+        self.body.max_mana += amt
+        self.set_body_timer()
 
     def take_damage(self, amt, damage_type):
         self.body.take_damage(amt, damage_type)
@@ -180,6 +185,12 @@ class Person(Actor):
         else:
             super().hear_timer(keyword)
 
+    def learn_spell(self, spell):
+        self.spells_known.add(spell)
+        self.receive_text_message(
+            f"You learn the \"{spell.synonyms[0]}\" spell"
+        )
+
     def wake_up(self):
         self.location.show_text_to_hero(self.name + " wakes up.")
         self.awake = True
@@ -203,6 +214,9 @@ class Person(Actor):
         self.location.show_text_to_hero(text)
         self.alive = False
         self.vanish()
+
+    def reset_body(self):
+        self.body.reset()
 
     def get_fatigue_multiplier(self, decay_rate=0.008):
         x = self.body.get_total_fatigue()

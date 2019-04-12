@@ -49,10 +49,10 @@ class WorldEvents(WorldAgent):
         self.world = world_map
 
     def take_turn(self):
-        if random() < 1/300:
+        if random() < 1/100:
             ghouls = GhoulHorde.in_world(self.world)
             print(f"{ghouls.name} appeared")
-        if random() < 1/150:
+        if random() < 1/75:
             kobolds = KoboldGroup.in_world(self.world)
             print(f"{kobolds.name} emerged from underground")
 
@@ -151,6 +151,9 @@ class PopulationAgent(WorldAgent):
 
 
 class ExternalNuisance(PopulationAgent):
+    morph_type = None
+    member_name = "group"
+
     def __init__(self, *args, target, **kwargs):
         super().__init__(*args, **kwargs)
         self.target = target
@@ -160,17 +163,20 @@ class ExternalNuisance(PopulationAgent):
     @classmethod
     def in_world(cls, world_map):
         return cls(
-            name=namemaker.make_name()+"kobolds",
+            name=namemaker.make_name()+cls.member_name,
             location=world_map,
             coordinates=world_map.random_point(),
             target=None,
         )
 
+    def wants_to_morph(self, site):
+        return not site.has_morph_type(self.morph_type)
+
     def site_preference(self, site):
         return 0
 
     def get_morph(self):
-        pass
+        return self.morph_type()
 
     def take_turn(self):
         if self.target is None or self.target.destroyed:
@@ -203,7 +209,8 @@ class ExternalNuisance(PopulationAgent):
                 shuffle(candidate_sites)
                 site = max(candidate_sites, key=self.site_preference)
                 self.change_site(site)
-                site.add_morph(self.get_morph())
+                if self.wants_to_morph(site):
+                    site.add_morph(self.get_morph())
                 print(f"{self.name} took {site.get_name()}")
 
         self.power -= 0.1
@@ -217,8 +224,8 @@ class ExternalNuisance(PopulationAgent):
 
 
 class BanditGroup(ExternalNuisance):
-    def get_morph(self):
-        return sites.BanditHabitation()
+    member_name = "gang"
+    morph_type = sites.BanditHabitation
 
     def build_actors(self):
         actors = []
@@ -254,10 +261,11 @@ class BanditGroup(ExternalNuisance):
 
 
 class GhoulHorde(ExternalNuisance):
-    def get_morph(self):
-        return sites.GhoulHabitation()
+    member_name = "ghouls"
+    morph_type = sites.GhoulHabitation
 
     def site_preference(self, site):
+        # TODO: Better check for this
         if "tomb" in site.get_name():
             return 1
         else:
@@ -265,7 +273,7 @@ class GhoulHorde(ExternalNuisance):
 
     def build_actors(self):
         adjectives = [
-            "skinny", "tall", "hairy", "filthy", "pale", "short",
+            "peeling", "thin", "hairy", "spotted", "bloated", "short",
         ]
         actors = []
         for adjective in adjectives:
@@ -278,12 +286,12 @@ class GhoulHorde(ExternalNuisance):
 
 
 class KoboldGroup(ExternalNuisance):
+    member_name = "kobolds"
     adjectives = [
         "skinny", "tall", "hairy", "filthy", "pale", "short",
     ]
 
-    def get_morph(self):
-        return sites.KoboldHabitation()
+    morph_type = sites.KoboldHabitation
 
     @staticmethod
     def boss_location_function(region):
@@ -293,7 +301,7 @@ class KoboldGroup(ExternalNuisance):
                 randomize=True
             )
         except errors.MissingNode:
-            return region.random_location()
+            return region.random_location(exclude_entrance=True)
 
     def build_actors(self):
         actors = []
@@ -331,7 +339,7 @@ if __name__ == "__main__":
     town_n = 10
     cave_n = 24
     caves = [
-        sites.Cave.at_point(
+        sites.RuneCave.at_point(
             location=world_map,
             coordinates=world_map.random_point(),
             direction=direction.down,
@@ -348,7 +356,7 @@ if __name__ == "__main__":
         )
         for i in range(town_n)
     ]
-    world_schedule.run_game(15000000)
+    world_schedule.run_game(5000000)
 
     dude = make_player(
         location=world_map,

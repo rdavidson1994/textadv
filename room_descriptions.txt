@@ -58,6 +58,10 @@ The brigands have made their barracks here.
     {lamp:, and a small oil lamp stands in the rough center of the room, shedding dim orange light.}
 }
 
+@RuneChamber
+Arcane runes of pre-human origin are engraved on the walls of this room.
+You can feel a powerful magical energy pouring from them.
+
 @BanditKitchen
 This room serves as the bandits' kitchen and pantry.
 {crate: Crates are stacked along one wall to serve as an improvised counter,

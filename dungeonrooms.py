@@ -7,6 +7,7 @@ from random import choice
 import logging
 from action import Eat
 from errors import NotEnoughNodes, MissingNode
+import runes
 from actor import Person
 from ai import WanderingMonsterAI
 import parsetemplate
@@ -213,7 +214,7 @@ class CaveEntrance(Entrance):
 
 
 class KoboldCaveEntrance(Entrance):
-    preference_list = [ReplaceRoomType(Entrance)]
+    preference_list = (ReplaceRoomType(Entrance),)
 
     def generate_items(self):
         super().generate_items()
@@ -224,6 +225,14 @@ class KoboldCaveEntrance(Entrance):
         Item(
             location=self,
             name=Name("animal hides")
+        )
+
+
+class RuneChamber(GeneratedRoom):
+    def generate_items(self):
+        runes.Rune(
+            location=self,
+            name=Name("runes", "rune runes")
         )
 
 
@@ -295,11 +304,8 @@ class BossQuarters(GeneratedRoom):
 class HealthPotion(FoodItem):
     def be_targeted(self, act):
         if isinstance(act, Eat):
+            act.actor.reset_body()
             act.actor.receive_text_message("You feel brand new.")
-            act.actor.body.damage = 0
-            act.actor.body.fatigue = 0
-            act.actor.body.short_fatigue = 0
-            act.actor.body.bleeding_damage = 0
             return True, ""
         else:
             return super().be_targeted(act)
@@ -329,7 +335,7 @@ class Kitchen(GeneratedRoom):
 
 
 class BanditKitchen(Kitchen):
-    pass
+    basic_items = ["crates", "rations"]
 
 
 class MessHall(GeneratedRoom):
@@ -356,7 +362,7 @@ class BanditBarracks(Barracks):
     def generate_items(self):
         d = self.decor_dict
         d["bedroll"] = Thing(self, "bedroll")
-        d["lamp"] = Item(self, Name("lamp" "lamp lantern"))
+        d["lamp"] = Item(self, Name("lamp", "lamp lantern"))
 
 
 class Prison(GeneratedRoom):

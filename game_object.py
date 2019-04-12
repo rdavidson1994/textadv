@@ -461,7 +461,6 @@ class PortalEdge:
 
     def be_entered(self, actor):
         if self.site:
-            print("UPDATED REGION")
             self.site.update_region()
         if actor.location == self.source.location:
             actor.change_location(self.target.location, self.target.coordinates)

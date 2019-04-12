@@ -15,7 +15,7 @@ class Population:
         try:
             return self.location_functions[actor](region)
         except KeyError:
-            return region.random_location()
+            return region.random_location(exclude_entrance=True)
 
     def __init__(self):
         self.built = False
@@ -68,7 +68,7 @@ class Kobold(Population):
                 randomize=True
             )
         except errors.MissingNode:
-            return region.random_location()
+            return region.random_location(exclude_entrance=True)
 
     def build_actors(self):
         for adjective in self.adjectives:
@@ -88,6 +88,7 @@ class Kobold(Population):
         sword.damage_type = "sharp"
         sword.damage_mult = 3
         self.location_functions[boss] = self.boss_location_function
+
 
 class TestPopulation(unittest.TestCase):
     def test_hide_actors(self):

@@ -360,7 +360,6 @@ class SpellReport(DetailAction):
         )
 
 
-
 class Examine(DetailAction, SingleTargetAction):
     synonyms = ["x", "look at", "examine", "look", "l"]
 

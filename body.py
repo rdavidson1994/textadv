@@ -23,6 +23,7 @@ class Body:
         self.bleeding_damage = 0
         self.ko_time = 0
         self.stable = True  # if false, needs updates
+        self.mana_regen_rate = 1
 
     def take_ko(self, amt):
         self.ko_time += amt
@@ -35,8 +36,17 @@ class Body:
         self.owner.die(amt, typ)
 
     def lose_mana(self, amt):
+        # This one throws an error, because you got stuff for free
         self.mana -= amt
         assert (self.mana >= 0)
+
+    def gain_mana(self, amt):
+        # This one doesn't, because you just got less mana than possible
+        prospective_mana = self.mana+amt
+        if prospective_mana <= self.max_mana:
+            self.mana = prospective_mana
+        else:
+            self.mana = self.max_mana
 
     def take_fatigue(self, amt):
         if amt > 0:
@@ -123,24 +133,30 @@ class Body:
         self.owner.set_body_timer()
 
     def update(self):
-        needs_awaken = False
+        needs_update = False
         if self.ko_time:
+            needs_update = True
             self.ko_time -= 1
             if self.ko_time <= 0:
                 self.ko_time = 0
                 if not self.owner.awake:
                     self.owner.wake_up()
         if self.bleeding_damage:
+            needs_update = True
             self.take_damage(self.bleeding_damage, "bleed")
             if random() < 0.13:
                 self.bleeding_damage -= 1
             if self.bleeding_damage <= 0:
                 self.bleeding_damage = 0
         if self.short_fatigue:
+            needs_update = True
             self.short_fatigue -= 6
             if self.short_fatigue <= 0:
                 self.short_fatigue = 0
-        if self.ko_time or self.bleeding_damage or self.short_fatigue:
+        if self.mana < self.max_mana:
+            needs_update = True
+            self.gain_mana(self.mana_regen_rate)
+        if needs_update:
             self.owner.set_body_timer()
         else:
             self.stable = True
@@ -162,6 +178,12 @@ class Body:
             return 300
         else:
             return percentile
+
+    def reset(self):
+        self.damage = 0
+        self.fatigue = 0
+        self.short_fatigue = 0
+        self.bleeding_damage = 0
 
 
 class UndeadBody(Body):

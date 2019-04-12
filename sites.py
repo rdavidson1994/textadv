@@ -45,6 +45,9 @@ class Site:
     def remove_population(self, population):
         self.populations.remove(population)
 
+    def has_morph_type(self, typ):
+        return any(isinstance(m, typ) for m in self.morphs)
+
     @classmethod
     def at_point(
         cls, location, direction,
@@ -125,6 +128,10 @@ class RegionSite(Site):
 
 class Cave(RegionSite):
     region_type = region.EmptyCaves
+
+
+class RuneCave(RegionSite):
+    region_type = region.RuneCave
 
 
 class Tomb(RegionSite):

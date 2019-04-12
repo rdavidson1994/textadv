@@ -437,18 +437,14 @@ class Caves(Region):
             inhabitant = self.make_enemy(loc)
             self.inhabitants.add(inhabitant)
 
-    def random_location(self):
+    def random_location(self, exclude_entrance=False):
         while True:
             node = choice(self.node_list)
             location = node.location
-            if location.is_entrance():
+            if exclude_entrance and location.is_entrance():
                 continue
             else:
                 return location
-
-    def clear_inhabitants(self):
-        for actor in self.inhabitants:
-            actor.die()
 
 
 class EmptyCaves(Caves):
@@ -456,6 +452,10 @@ class EmptyCaves(Caves):
     essential_rooms = (dungeonrooms.CaveEntrance,)
     optional_rooms = ()
     filler_rooms = (dungeonrooms.CaveFiller,)
+
+
+class RuneCave(EmptyCaves):
+    essential_rooms = (dungeonrooms.CaveEntrance, dungeonrooms.RuneChamber)
 
 
 # class KoboldCaves(Caves):

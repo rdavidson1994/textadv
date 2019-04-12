@@ -22,7 +22,8 @@ def make_player(location, coordinates, landmarks=set(), use_web_output=False):
     my_parser.web_output = use_web_output
     john.view_location()
     john.known_landmarks = set(landmarks)
-    john.spells_known = {spells.Shock, spells.Fireball}
+    # john.spells_known = {spells.Shock, spells.Fireball}
+    john.spells_known = set()
     john.body.max_mana = 50
     john.body.mana = 50
     sword = game_object.Item(
@@ -46,6 +47,20 @@ class World:
 
     def run_game(self, duration=None):
         self.schedule.run_game(duration)
+
+
+class ActorTest(World):
+    def __init__(self):
+        super().__init__()
+        self.test_location = Location(
+            description="Test Location",
+            sched=self.schedule
+        )
+        self.actor = make_player(
+            location=self.test_location,
+            coordinates=None,
+        )
+
 
 
 class Static(World):

@@ -1,5 +1,5 @@
 from action import SingleTargetAction, ZeroTargetAction, Action
-from random import randint
+from random import randint, choice
 from verb import StandardVerb
 
 
@@ -47,11 +47,26 @@ class InvalidSpell(Spell, ZeroTargetAction):
 
 class Shock(Spell, SingleTargetAction):
     synonyms = ["shock"]
-    stamina_cost = 20
     mana_cost = 25
 
     def affect_game(self):
         self.target.take_damage(randint(75, 125), "lightning")
+
+
+class Blade(Spell, SingleTargetAction):
+    synonyms = ["blade"]
+    mana_cost = 30
+
+    def affect_game(self):
+        self.target.take_damage(randint(75, 125), "sharp")
+
+
+class Knock(Spell, SingleTargetAction):
+    synonyms = ["knock"]
+    mana_cost = 30
+
+    def affect_game(self):
+        self.target.take_damage(randint(75, 200), "blunt")
 
 
 class AOESpell(Spell, ZeroTargetAction):
@@ -69,7 +84,6 @@ class AOESpell(Spell, ZeroTargetAction):
 class StunWave(AOESpell):
     synonyms = ["stun wave", "stunwave"]
     mana_cost = 35
-    stamina_cost = 20
 
     def spell_effect(self, other):
         duration = randint(20, 30)
@@ -79,8 +93,19 @@ class StunWave(AOESpell):
 class Fireball(AOESpell):
     synonyms = ["fireball", "fire ball"]
     mana_cost = 40
-    stamina_cost = 20
 
     def spell_effect(self, other):
         damage = randint(50, 100)
         other.take_damage(damage, "fire")
+
+
+def get_random_spell():
+    # placeholder, should have procgen later
+    return choice([
+        StunWave,
+        Fireball,
+        Shock,
+        Blade,
+        Knock,
+    ])
+

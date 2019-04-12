@@ -38,6 +38,7 @@ class HeldTool:
             template = "You must be holding the {} in order to use it"
             return False, template.format(self.tool.get_name(self.actor))
 
+
 class Motion:
     """Defines geometry checking and gameplay effects for actions that
     involve moving through a portal. All that's left for subclasses to do
@@ -48,7 +49,7 @@ class Motion:
     traverses_portals = True
 
     def get_portal(self):
-        """Returns an inertactable that the action is trying to use
+        """Returns an game_object.Thing that the action is trying to use
         as a portal. Maybe its a portal, maybe its not. Maybe it doesn't
         connect right. No guarantees. Might raise a PortalNotFoundError.
         """
