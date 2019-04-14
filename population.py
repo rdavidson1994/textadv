@@ -86,7 +86,7 @@ class Kobold(Population):
         boss.ai = ai.WanderingMonsterAI(boss)
         sword = game_object.Item(location=boss, name=Name("crude sword"))
         sword.damage_type = "sharp"
-        sword.damage_mult = 3
+        sword.damage_mult = 6
         self.location_functions[boss] = self.boss_location_function
 
 

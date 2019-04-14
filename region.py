@@ -684,13 +684,13 @@ if __name__ == "__main__":
     john.ai.visited_locations = {john.location}
     john.known_landmarks = {john.location.landmark1,
                             john.location.landmark2, }
-    john.spells_known = {spells.Shock, spells.StunWave, spells.Fireball}
+    john.spells_known = {spells.Shock, spells.Sleep, spells.Fireball}
     john.body.mana = 50
     john.body.max_mana = 50
     sword = dungeonrooms.Item(location=john,
                               name=dungeonrooms.Name("iron sword"),)
     sword.damage_type = "sharp"
-    sword.damage_mult = 3
+    sword.damage_mult = 6
     my_parser = john.ai
     quit_phrase = phrase.QuitPhrase(my_parser, ["quit", "exit"])
     inventory_phrase = phrase.InventoryPhrase(my_parser, ["i", "inventory"])

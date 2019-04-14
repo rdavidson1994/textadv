@@ -9,6 +9,9 @@ from population import Population
 from typing import List
 
 
+day = 1000*60*60*24
+
+
 def set_choice(in_set):
     try:
         return choice(tuple(in_set))
@@ -23,7 +26,7 @@ class TestAI(ai.AI):
 
 class WorldAgent(actor.Actor):
     rendered = False
-    update_period = 20000
+    update_period = 1*day
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -91,7 +94,7 @@ class Town(WorldAgent):
 
         roll = random()
         if roll < 1/10:
-            print(f"{self.name} had a good harvest")
+            # print(f"{self.name} had a good harvest")
             if self.unrest > 10:
                 self.unrest -= 10
             else:
@@ -99,7 +102,7 @@ class Town(WorldAgent):
 
         elif roll > 9/10:
             self.unrest += 3
-            print(f"{self.name} had a bad harvest")
+            # print(f"{self.name} had a bad harvest")
 
         if random() < (self.unrest/100)**2:
             group = BanditGroup(
@@ -124,6 +127,11 @@ class SubordinatePopulation(Population):
     def build_actors(self):
         self.actors = self.agent.build_actors()
 
+    def hide_actors(self):
+        super().hide_actors()
+        if all(not actor.alive for actor in self.actors):
+            self.agent.die()
+
 
 class PopulationAgent(WorldAgent):
     site = None
@@ -132,6 +140,10 @@ class PopulationAgent(WorldAgent):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.population = SubordinatePopulation(self)
+
+    def die(self):
+        print(f"{self.name} were eradicated.")
+        self.vanish()
 
     def vanish(self):
         self.change_site(None)
@@ -205,6 +217,7 @@ class ExternalNuisance(PopulationAgent):
             if not candidate_sites:
                 print(f"Finding no suitable home, {self.name} disbanded")
                 self.vanish()
+                return
             else:
                 shuffle(candidate_sites)
                 site = max(candidate_sites, key=self.site_preference)
@@ -221,6 +234,7 @@ class ExternalNuisance(PopulationAgent):
         if self.power <= 0:
             self.vanish()
             print(f"{self.name} was disbanded")
+            return
 
 
 class BanditGroup(ExternalNuisance):
@@ -233,12 +247,12 @@ class BanditGroup(ExternalNuisance):
             if random() < 0.5:
                 weapon_kind = "sword"
                 damage_type = "sharp"
-                damage_mult = 2+self.power/10
+                damage_mult = 4+self.power/5
                 title = "bandit swordsman"
             else:
                 weapon_kind = "mace"
                 damage_type = "blunt"
-                damage_mult = 3+self.power/10
+                damage_mult = 4+self.power/5
                 title = "bandit maceman"
 
             given_name = namemaker.make_name()
@@ -321,9 +335,10 @@ class KoboldGroup(ExternalNuisance):
 
         actors.append(boss)
         boss.ai = ai.WanderingMonsterAI(boss)
+        boss.combat_skill = 75
         sword = game_object.Item(location=boss, name=Name("crude sword"))
         sword.damage_type = "sharp"
-        sword.damage_mult = 3
+        sword.damage_mult = 6
         self.population.location_functions[boss] = self.boss_location_function
         return actors
 
@@ -356,7 +371,7 @@ if __name__ == "__main__":
         )
         for i in range(town_n)
     ]
-    world_schedule.run_game(5000000)
+    world_schedule.run_game(250*day)
 
     dude = make_player(
         location=world_map,

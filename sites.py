@@ -91,6 +91,10 @@ class Site:
         for population in self.populations:
             population.render(self.region)
 
+    def offload(self):
+        for population in self.populations:
+            population.hide_actors()
+
 
 class TownSite(Site):
     # This is a placeholder until two goals are met:
@@ -194,7 +198,7 @@ class KoboldHabitation(Habitation):
             spear = game_object.Item(location=boss,
                                      name=Name("crude sword"))
             spear.damage_type = "sharp"
-            spear.damage_mult = 3
+            spear.damage_mult = 6
             return boss
 
 

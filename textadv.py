@@ -22,7 +22,7 @@ sword = game_object.Item(location=plains,
                          name="iron longsword",
                          other_names=["sword", "longsword", "iron sword"])
 sword.damage_type = "sharp"
-sword.damage_mult = 3
+sword.damage_mult = 6
 
 key = game_object.Item(location=plains,
                        name="key")

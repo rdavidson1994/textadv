@@ -121,6 +121,7 @@ class Person(Actor):
         self.known_landmarks = set()
         self.body = body.Body(self)
         self.spells_known = set()
+        self.traits.add("person")
         self.get_health_report = self.body.get_health_report
         self.money = 0
 
@@ -131,10 +132,10 @@ class Person(Actor):
         self.ai.display(self.location.describe(self, full_text=True))
 
     def get_look_text(self, viewer=None):
-        out = super().get_look_text()
-        out += self.get_health_report(viewer=viewer)
+        out = super().get_look_text()+":\n"
+        out += self.get_health_report(viewer=viewer)+"\n"
         if self.things:
-            out += "\nInventory:\n"
+            out += "eInventory:\n"
             out += "\n".join([i.get_name(viewer) for i in self.things])
         return out
 

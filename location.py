@@ -9,8 +9,7 @@ class Location(Thing):
         self.traits.add("location")
         self.description = description
 
-    @staticmethod
-    def is_entrance():
+    def is_entrance(self):
         return False
 
     def path_to_entrance(self):
@@ -50,7 +49,8 @@ class Location(Thing):
         """PUBLIC: returns a string description of the location"""
         str_list = []
         category_list = [("actor", "\nPeople and animals:"),
-                         ("item", "\nObjects of interest:"),
+                         ("item", "\nItems:"),
+                         ("interesting", "\nInteresting features:"),
                          ("portal", "\nExits:")]
         if full_text:
             str_list.append(self.get_description(viewer))

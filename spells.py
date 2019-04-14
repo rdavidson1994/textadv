@@ -5,10 +5,11 @@ from verb import StandardVerb
 
 class Spell(Action):
     class VerbClass(StandardVerb):
-        match_strings = ["cast? VERB",
-                         "cast? VERB on? TARGET",
-                         "cast? VERB on? TARGET with TOOL",
-                         ]
+        match_strings = [
+            "cast? VERB",
+            "cast? VERB on? TARGET",
+            "cast? VERB on? TARGET with TOOL",
+        ]
 
         def match_quality(self, i):
             if i == 3:
@@ -39,10 +40,21 @@ class Spell(Action):
 
 class InvalidSpell(Spell, ZeroTargetAction):
     synonyms = ["hocus pocus"]
+
     class VerbClass(StandardVerb):
         match_strings = ["cast NONSENSE"]
+
         def match_quality(self, i):
             return "bad"
+
+
+class Heal(Spell, SingleTargetAction):
+    synonyms = ["heal"]
+    mana_cost = 40
+    target_traits = ["person"]
+
+    def affect_game(self):
+        self.target.reset_body()
 
 
 class Shock(Spell, SingleTargetAction):
@@ -66,7 +78,7 @@ class Knock(Spell, SingleTargetAction):
     mana_cost = 30
 
     def affect_game(self):
-        self.target.take_damage(randint(75, 200), "blunt")
+        self.target.take_damage(randint(50, 100), "blunt")
 
 
 class AOESpell(Spell, ZeroTargetAction):
@@ -81,8 +93,8 @@ class AOESpell(Spell, ZeroTargetAction):
         pass
 
 
-class StunWave(AOESpell):
-    synonyms = ["stun wave", "stunwave"]
+class Sleep(AOESpell):
+    synonyms = ["sleep"]
     mana_cost = 35
 
     def spell_effect(self, other):
@@ -99,13 +111,23 @@ class Fireball(AOESpell):
         other.take_damage(damage, "fire")
 
 
+class ShockWave(AOESpell):
+    synonyms = ["shockwave", "shock wave"]
+    mana_cost = 30
+
+    def spell_effect(self, other):
+        damage = randint(30, 75)
+        other.take_damage(damage, "blunt")
+
+
 def get_random_spell():
     # placeholder, should have procgen later
     return choice([
-        StunWave,
+        Sleep,
         Fireball,
         Shock,
         Blade,
         Knock,
+        Heal,
     ])
 

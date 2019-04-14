@@ -127,6 +127,13 @@ class GeneratedRoom(Location):
 
         self.generate_items()
 
+    def is_entrance(self):
+        # TODO: Implement "RoomMorph"s, instead of overwriting locations
+        if self.basis_location:
+            return self.basis_location.is_entrance()
+        else:
+            return False
+
     def add_newer_location(self, newer_location):
         assert self.newer_location is None
         self.newer_location = newer_location
@@ -196,8 +203,7 @@ class Entrance(GeneratedRoom):
     map_letter = "En"
     preference_list = [ExitNumber(1), ]
 
-    @staticmethod
-    def is_entrance():
+    def is_entrance(self):
         return True
 
     def generate_items(self):
@@ -329,7 +335,7 @@ class Kitchen(GeneratedRoom):
         d = self.decor_dict
         d["meat"] = Item(location=self, names=["meat", "meats"])
         knife = Item(location=self, names=["cleaver", "knife"])
-        knife.damage_mult = 3
+        knife.damage_mult = 6
         knife.damage_type = "sharp"
         d["knife"] = knife
 

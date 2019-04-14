@@ -29,7 +29,7 @@ class WeaponShop(Shop):
 
         sword = game_object.Item(name="spear", location=self)
         sword.price = 100
-        sword.damage_mult = 3
+        sword.damage_mult = 6
         sword.damage_type = "sharp"
         sword.owner = self.shopkeeper
 

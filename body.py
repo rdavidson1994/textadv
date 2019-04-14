@@ -120,11 +120,17 @@ class Body:
             self.bleeding_damage += floor(amt / 10)
             if self.stable:
                 self.start_updating()
-        if acute_damage >= 300:
-            self.die(amt, typ)
-        elif acute_damage > self.get_ko_cutoff():
+
+        ko_damage = acute_damage
+        if typ == "blunt":
+            # bonus knockout effect for blunt damage
+            ko_damage *= 2
+        if ko_damage > self.get_ko_cutoff():
             duration = randint(10, 15)
             self.take_ko(duration)
+
+        if acute_damage >= 300:
+            self.die(amt, typ)
         self.damage += amt
         self.owner.notice_damage(amt, typ)
 

@@ -349,10 +349,10 @@ class PortalVertex(Thing):
         self.landmark = None
 
     def set_site(self, site):
-        self.edge.site = site
+        self.edge.set_site(site, site_exit=self)
 
     def be_entered(self, actor):
-        success, string = self.edge.be_entered(actor)
+        self.edge.be_entered(actor, self)
 
     def get_relative_direction(self, viewer):
         return self.edge.get_relative_direction(viewer)
@@ -413,6 +413,7 @@ class PortalEdge:
         **kwargs
     ):
         self.site = None
+        self.site_exit = None  # used to specify which vertex is the exit
         self.source_loc, self.target_loc = locations
         self.source_coords, self.target_coords = coordinate_pairs
         self.source_direction, self.target_direction = directions
@@ -459,9 +460,14 @@ class PortalEdge:
                             **kwargs)
         return output_portal
 
-    def be_entered(self, actor):
-        if self.site:
-            self.site.update_region()
+    def be_entered(self, actor, vertex):
+        if self.site and actor.has_trait("hero"):
+            if vertex == self.site_exit:
+                # if the hero is leaving the site.
+                self.site.offload()
+            else:
+                # if the hero is entering the site.
+                self.site.update_region()
         if actor.location == self.source.location:
             actor.change_location(self.target.location, self.target.coordinates)
             actor.nearest_portal = self.target
@@ -491,6 +497,10 @@ class PortalEdge:
             return self.source_direction
         else:
             raise errors.MisplacedViewer
+
+    def set_site(self, site, site_exit):
+        self.site = site
+        self.site_exit = site_exit
 
     def set_vertex_location(self, index, new_location, new_coords=None):
         self.vertices[index].change_location(new_location, new_coords)

@@ -138,7 +138,7 @@ class Action(metaclass=ActionMeta):
                 else:
                     # if any trait fails, return false and tell the user why.
                     ith_name = self.target_list[i].get_name(self.actor)
-                    return False, "The {} is not {}.".format(ith_name, trait)
+                    return False, "{} is not a {}.".format(ith_name, trait)
         else:
             # if nothing fails, the test passes.
             return True, ""
@@ -541,7 +541,7 @@ class WeaponStrike(mixins.HeldTool, ToolAction):
         except AttributeError:
             damage_type = "blunt"
             damage_mult = 1
-        amt = randint(0, 30) * damage_mult
+        amt = randint(0, 15) * damage_mult
         self.target.take_damage(amt, damage_type)
 
 

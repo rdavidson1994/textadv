@@ -203,14 +203,14 @@ class Verb:
     def match(self, actor, input_string):
         match = None
         quality = None
-        for i, (regex, sig) in enumerate(zip(self.regex_list,
-                                             self.signature_list)):
+        for i, (regex, sig) in enumerate(zip(self.regex_list,                                self.signature_list)):
             possible_match = regex.match(input_string)
             if possible_match:
                 match = possible_match
                 quality = self.match_quality(i)
                 if quality == "good":
                     break
+
         if match:
             return match.groups(), sig, quality
         else:

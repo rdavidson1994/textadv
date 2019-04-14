@@ -55,9 +55,9 @@ class Parser(AI):
         try:
             new_list = [lookup[new_name]]
         except KeyError:
-            new_list = self.actor.get_targets_from_name(new_name)
+            new_list = [i for i in possibility_list if i.has_name(new_name)]
         if new_list:
-            return [i for i in possibility_list if i in new_list]
+            return new_list
         else:
             # If the input doesn't make sense as a name, try it as a new command
             self.logged_action = self.execute_string(new_name)

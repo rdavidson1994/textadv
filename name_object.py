@@ -77,7 +77,7 @@ class Name:
         else:
             self.lemma_set = set(definition_string.split(" "))
 
-    def get_text(self):
+    def get_text(self, viewer=None):
         return self.display_string
 
     def matches(self, string):
