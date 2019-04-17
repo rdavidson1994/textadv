@@ -135,7 +135,7 @@ class Person(Actor):
         out = super().get_look_text()+":\n"
         out += self.get_health_report(viewer=viewer)+"\n"
         if self.things:
-            out += "eInventory:\n"
+            out += "Inventory:\n"
             out += "\n".join([i.get_name(viewer) for i in self.things])
         return out
 

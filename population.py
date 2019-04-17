@@ -15,7 +15,7 @@ class Population:
         try:
             return self.location_functions[actor](region)
         except KeyError:
-            return region.random_location(exclude_entrance=True)
+            return region.arbitrary_location()
 
     def __init__(self):
         self.built = False
@@ -68,7 +68,7 @@ class Kobold(Population):
                 randomize=True
             )
         except errors.MissingNode:
-            return region.random_location(exclude_entrance=True)
+            return region.arbitrary_location()
 
     def build_actors(self):
         for adjective in self.adjectives:

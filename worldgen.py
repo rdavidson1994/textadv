@@ -69,7 +69,8 @@ class Town(WorldAgent):
             location=self.location,
             direction=direction.random(),
             coordinates=self.coordinates,
-            landmark_name=self.name_object+"city",
+            landmark_name=self.name_object+"village",
+            agent=self,
         )
         self.traits.add("town")
 
@@ -81,7 +82,7 @@ class Town(WorldAgent):
             self.tomb_count += 1
             tomb_name = namemaker.make_name()
             print(f"{self.name} built a tomb named {tomb_name.get_text()}")
-            tomb = sites.Tomb.at_point(
+            sites.Tomb.at_point(
                 world_map,
                 direction.random(),
                 world_map.random_in_circle(self.coordinates, 5),
@@ -315,7 +316,7 @@ class KoboldGroup(ExternalNuisance):
                 randomize=True
             )
         except errors.MissingNode:
-            return region.random_location(exclude_entrance=True)
+            return region.arbitrary_location()
 
     def build_actors(self):
         actors = []

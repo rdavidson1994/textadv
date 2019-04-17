@@ -69,7 +69,7 @@ class Region:
         self.schedule = sched
         self.entrance_portal = entrance_portal
 
-    def bounds(self):
+    def _bounds(self):
         """returns xmin, xmax, ymin, ymax"""
 
         def x(n):
@@ -94,7 +94,7 @@ class Region:
 
     def get_text_map(self, viewer=None):
         """returns a matrix A[y][x] of characters"""
-        x_min, x_max, y_min, y_max = self.bounds()
+        x_min, x_max, y_min, y_max = self._bounds()
         i_max = 2 * (x_max - x_min)
         j_max = 2 * (y_max - y_min)
         grid = [["  " for i in range(i_max + 1)] for j in range(j_max + 1)]
@@ -149,14 +149,14 @@ class Region:
             pass
         return out
 
-    def nodes_with_type(self, room_type):
+    def _nodes_with_type(self, room_type):
         return [
             node for node in self.node_list
             if isinstance(node.location, room_type)
         ]
 
     def node_with_type(self, room_type, randomize=False):
-        candidates = self.nodes_with_type(room_type)
+        candidates = self._nodes_with_type(room_type)
         if not candidates:
             raise dungeonrooms.MissingNode
         if randomize:
@@ -184,14 +184,11 @@ class Region:
         except IndexError:
             return None
 
-    def build_locations(self):
-        return self.build_blank_locations()
-
     def build_blank_locations(self):
         for index, node in enumerate(self.node_list):
             if node.location is None:
-                location = location.Location(description="Place {}".format(index))
-                node.set_location(location)
+                loc = location.Location(description="Place {}".format(index))
+                node.set_location(loc)
 
     def build_portals(self):
         for node in self.node_list:
@@ -437,14 +434,13 @@ class Caves(Region):
             inhabitant = self.make_enemy(loc)
             self.inhabitants.add(inhabitant)
 
-    def random_location(self, exclude_entrance=False):
-        while True:
-            node = choice(self.node_list)
-            location = node.location
-            if exclude_entrance and location.is_entrance():
-                continue
-            else:
-                return location
+    def arbitrary_location(self):
+        # Finds an arbitrary "good" place for a person/thing to show up
+        candidates = [
+            node for node in self.node_list if not node.location.is_entrance()
+        ]
+        result_node = choice(candidates)
+        return result_node.location
 
 
 class EmptyCaves(Caves):
@@ -569,7 +565,6 @@ class Node:
         self.location = loc
         loc.map_node = self
 
-
     def distance(self, other_node):
         return len(self.region.a_star(self, other_node))
 
@@ -635,9 +630,9 @@ def prison_test():
               if isinstance(node.location, dungeonrooms.Prison)][0]
     john.change_location(prison)
     watches = [
-                   list(prison.things_with_name(name))[0]
-                   for name in ("prisoner","key","cage")
-              ]
+        list(prison.things_with_name(name))[0]
+        for name in ("prisoner", "key", "cage")
+    ]
     return watches
 
 # prison_test()

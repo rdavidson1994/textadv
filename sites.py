@@ -1,10 +1,12 @@
 import location
 import region
+import random
 import game_object
 import building
 import actor
 import ai
 import body
+import errors
 from name_object import Name
 from dungeonrooms import (
     TreasureRoom, Barracks, Kitchen, MeatChamber, MessHall, Prison, Apothecary,
@@ -29,11 +31,9 @@ class Site:
 
     def get_name(self, viewer=None):
         try:
-            landmark = self.landmark
+            return self.landmark.name.get_text()
         except AttributeError:
             return "unnamed site"
-        else:
-            return landmark.name.get_text()
 
     def allows_population(self, population):
         return all(p.allows_other(population) for p in self.populations)
@@ -65,6 +65,7 @@ class Site:
             location, direction, coordinates, **kwargs
         )
         schedule = location.schedule
+        #TODO: Fix this to work with the "agent" argument
         output_site = cls(schedule, portal.target)
         if landmark_name:
             output_site.landmark = portal.source.create_landmark(landmark_name)
@@ -96,28 +97,74 @@ class Site:
             population.hide_actors()
 
 
+class Morph(ABC):
+    @abstractmethod
+    def alter_region(self, region):
+        pass
+
+
+class TownRegion:
+    # TODO: Put this someplace more appropriate
+    def __init__(self, entrance_portal, sched):
+        self.schedule = sched
+        self.main_location = location.Location(
+            name="town",
+            description="You are in a very placeholder-like town"
+        )
+        self.locations = [self.main_location]
+        entrance_portal.change_location(self.main_location)
+        building.WeaponShop(self.main_location, sched=self.schedule)
+
+    def arbitrary_location(self):
+        return self.main_location
+
+    def add_room(self, room):
+        self.locations.append(room)
+
+    def room_with_type(self, room_type):
+        candidates = [
+            loc for loc in self.locations if isinstance(loc, room_type)
+        ]
+        if candidates:
+            return random.choice(candidates)
+        else:
+            raise errors.MissingNode
+
+
 class TownSite(Site):
     # This is a placeholder until two goals are met:
     # 1. Region code is abstracted enough to accommodate towns
     # 2. Towns have proper a region subclass written
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.town = None
 
-    def add_morph(self, new_morph):
-        raise NotImplementedError
+    def __init__(self, *args, agent, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.agent = agent
 
     def allows_population(self, population):
         return False
 
     def construct_base_region(self):
-        self.town = location.Location(
-            name="town",
-            description="You are in a very placeholder-like town"
+        self.region = TownRegion(self.entrance_portal, self.schedule)
+
+    @classmethod
+    def at_point(cls, location, direction, coordinates=None,
+                 portal_type=game_object.PortalEdge, landmark_name=None,
+                 **kwargs):
+        assert "agent" in kwargs
+        # TODO: Fix this so it works with the agent argument
+
+
+class TownBuildingMorph(Morph):
+    def __init__(self, building_factory):
+        self.building_factory = building_factory
+
+    def alter_region(self, region):
+        assert isinstance(region, TownRegion)
+        building = self.building_factory(
+            region.main_location,
+            sched=region.schedule,
         )
-        self.entrance_portal.change_location(self.town)
-        building.WeaponShop(self.town, sched=self.schedule)
-        self.region = True
+        region.add_room(building)
 
 
 class RegionSite(Site):
@@ -142,14 +189,6 @@ class Tomb(RegionSite):
     region_type = region.EmptyTomb
 
 
-class Morph(ABC):
-    def __init__(self, clear_inhabitants=True):
-        self.clear_inhabitants = clear_inhabitants
-
-    @abstractmethod
-    def alter_region(self, region):
-        pass
-
 
 class Habitation(Morph):
     essential_rooms = ()
@@ -157,22 +196,12 @@ class Habitation(Morph):
     filler_rooms = ()
     enemy_number = 0
 
-    EnemyPolicy = region.CreaturePolicy
-    BossPolicy = region.CreaturePolicy
-
     def alter_region(self, region):
-        region.enemy_policy = self.EnemyPolicy(region.schedule)
-        region.boss_policy = self.BossPolicy(region.schedule)
-        region.enemy_number = self.enemy_number
-
         region.build_locations(
             essential=self.essential_rooms,
             optional=self.optional_rooms,
             filler=self.filler_rooms,
         )
-        # old code using the creature policies:
-        # region.create_inhabitants()
-
         return region
 
 
@@ -180,26 +209,6 @@ class KoboldHabitation(Habitation):
     essential_rooms = (TreasureRoom, Barracks, Kitchen, KoboldCaveEntrance)
     optional_rooms = (MessHall, Prison, Apothecary, BossQuarters)
     enemy_number = 6
-
-    class EnemyPolicy(region.CreaturePolicy):
-        adjectives = ["skinny", "tall", "hairy",
-                      "filthy", "pale", "short", ]
-        enemy_type = actor.SquadActor
-        enemy_name = "kobold"
-
-    class BossPolicy(region.CreaturePolicy):
-        def get_creature(self, location=None, adjective=None):
-            name = Name("kobold leader")
-            boss = actor.Person(location=location,
-                                name=name,
-                                sched=self.schedule)
-            boss.combat_skill = 75
-            boss.ai = ai.WanderingMonsterAI(boss)
-            spear = game_object.Item(location=boss,
-                                     name=Name("crude sword"))
-            spear.damage_type = "sharp"
-            spear.damage_mult = 6
-            return boss
 
 
 class BanditHabitation(Habitation):

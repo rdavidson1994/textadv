@@ -37,5 +37,6 @@ class WeaponShop(Shop):
         armor.price = 150
         armor.owner = self.shopkeeper
 
+
 def town_at_point():
     pass
