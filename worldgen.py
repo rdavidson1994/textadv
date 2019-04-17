@@ -3,6 +3,7 @@ import schedule, actor, wide, action, namemaker
 import sites, game_object, body, dungeonrooms, errors
 import ai
 import direction
+import building
 from world import make_player
 from random import random, choice, shuffle
 from population import Population
@@ -72,6 +73,8 @@ class Town(WorldAgent):
             landmark_name=self.name_object+"village",
             agent=self,
         )
+        for i in range(3):
+            self.site.add_morph(sites.TownBuildingMorph(building.WeaponShop))
         self.traits.add("town")
 
     def take_turn(self):

@@ -17,7 +17,7 @@ from typing import Type
 
 
 class Site:
-    def __init__(self, sched=None, entrance_portal=None):
+    def __init__(self, sched=None, entrance_portal=None, **kwargs):
         self.schedule = sched
         self.landmark = None
         if self.schedule is None:
@@ -66,7 +66,7 @@ class Site:
         )
         schedule = location.schedule
         #TODO: Fix this to work with the "agent" argument
-        output_site = cls(schedule, portal.target)
+        output_site = cls(schedule, portal.target, **kwargs)
         if landmark_name:
             output_site.landmark = portal.source.create_landmark(landmark_name)
         return output_site
@@ -113,7 +113,7 @@ class TownRegion:
         )
         self.locations = [self.main_location]
         entrance_portal.change_location(self.main_location)
-        building.WeaponShop(self.main_location, sched=self.schedule)
+        # building.WeaponShop(self.main_location, sched=self.schedule)
 
     def arbitrary_location(self):
         return self.main_location
@@ -146,12 +146,12 @@ class TownSite(Site):
     def construct_base_region(self):
         self.region = TownRegion(self.entrance_portal, self.schedule)
 
-    @classmethod
-    def at_point(cls, location, direction, coordinates=None,
-                 portal_type=game_object.PortalEdge, landmark_name=None,
-                 **kwargs):
-        assert "agent" in kwargs
-        # TODO: Fix this so it works with the agent argument
+    # @classmethod
+    # def at_point(cls, location, direction, coordinates=None,
+    #              portal_type=game_object.PortalEdge, landmark_name=None,
+    #              **kwargs):
+    #     assert "agent" in kwargs
+    #     # TODO: Fix this so it works with the agent argument
 
 
 class TownBuildingMorph(Morph):
@@ -165,6 +165,7 @@ class TownBuildingMorph(Morph):
             sched=region.schedule,
         )
         region.add_room(building)
+        return region
 
 
 class RegionSite(Site):
