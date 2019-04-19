@@ -26,6 +26,7 @@ def make_player(location, coordinates, landmarks=set(), use_web_output=False):
     john.spells_known = set()
     john.body.max_mana = 50
     john.body.mana = 50
+    john.money = 20
     sword = game_object.Item(
         location=john,
         name=name_object.Name("iron sword"),
@@ -62,7 +63,6 @@ class ActorTest(World):
         )
 
 
-
 class Static(World):
     def __init__(self, use_web_output=False, save_manager=None):
         super().__init__(save_manager=save_manager)
@@ -92,12 +92,12 @@ class Static(World):
 
         town = location.Location(
             name="town",
-            description ="You are in a very placeholder-like town"
+            description="You are in a very placeholder-like town"
         )
         town_portal = game_object.PortalEdge.free_portal(
             location=plains,
             direction=north,
-            coordinates=(25,10),
+            coordinates=(25, 10),
             name="gate"
         )
         town_portal.set_target_location(town)
@@ -112,4 +112,3 @@ class Static(World):
                 parser=john.ai,
                 synonyms=["<<save>>"]
             )
-

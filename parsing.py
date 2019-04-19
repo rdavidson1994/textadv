@@ -79,7 +79,7 @@ class Parser(AI):
         if isinstance(own_action, action.Sell):
             m = own_action.target.get_name(self.actor)
             p = own_action.proposed_price
-            self.display("{} offers you {}. Do you accept? (Y/N)".format(m,p))
+            self.display("{} offers you {}. Do you accept? (Y/N)".format(m, p))
             inp = self.input()
             if inp in {"y", "yes"}:
                 return True
@@ -126,7 +126,8 @@ class Parser(AI):
 
         elif self.actor.awake:
             text = action.get_success_string(viewer=self.actor)
-            self.display(text)
+            if not action.quiet:
+                self.display(text)
             my_action = self.get_current_action()
             conditions = (
                 my_action is not None,
@@ -190,7 +191,8 @@ class Parser(AI):
                 self.display(ph.perform_action())
                 return action.NullAction(self.actor)
         try:
-            action_or_routine = action.match_action_to_string(self, input_string)
+            action_or_routine = action.match_action_to_string(
+                self, input_string)
         except errors.NoMatchingObject:
             return action.NullAction(self.actor)
         else:
@@ -227,7 +229,9 @@ if __name__ == "__main__":
 
     loc = location.Location()
     dude = actor.Hero(loc)
-    sword = game_object.Item(location=loc, name="sword", other_names=["iron sword"])
-    bsword = game_object.Item(location=loc, name="sword", other_names=["bronze sword"])
+    sword = game_object.Item(location=loc, name="sword",
+                             other_names=["iron sword"])
+    bsword = game_object.Item(
+        location=loc, name="sword", other_names=["bronze sword"])
     p = Parser(dude)
     print(p.execute_user_input())

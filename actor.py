@@ -50,7 +50,7 @@ class Actor(game_object.Thing):
         assert self.schedule is not None
         super().change_location(new_location, coordinates, keep_arranged)
         for item in new_location.things:
-            if new_location.line_of_sight(self,item):
+            if new_location.line_of_sight(self, item):
                 self.ai.see_thing(item)
 
     def change_coordinates(self, new_coordinates, keep_arranged=False):
@@ -219,6 +219,9 @@ class Person(Actor):
     def reset_body(self):
         self.body.reset()
 
+    def full_rest(self):
+        self.body.full_rest()
+
     def get_fatigue_multiplier(self, decay_rate=0.008):
         x = self.body.get_total_fatigue()
         a = decay_rate
@@ -254,12 +257,11 @@ class Person(Actor):
         if action.is_social:
             if self.awake:
                 return self.ai.social_response(action)
-            else:        
+            else:
                 return False, "You cannot speak to an unconscious person."
 
         elif (
-                self.awake
-                and getattr(action, "is_physical_attack", False)
+            self.awake and getattr(action, "is_physical_attack", False)
         ):
             name = action.actor.get_identifier(self)
             parry_roll = self.get_parry_roll()
@@ -293,8 +295,8 @@ class Person(Actor):
         elif kind == "LANDMARK":
             candidates = self.known_landmarks
         else:
-            raise Exception # Need to specify a valid kind
-        if name in ("self","myself","yourself"):
+            raise Exception  # Need to specify a valid kind
+        if name in ("self", "myself", "yourself"):
             return [x for x in candidates if x == self]
         else:
             return [x for x in candidates if x.has_name(name)]

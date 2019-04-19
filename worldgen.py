@@ -1,6 +1,14 @@
 from name_object import Name
-import schedule, actor, wide, action, namemaker
-import sites, game_object, body, dungeonrooms, errors
+import schedule
+import actor
+import wide
+import action
+import namemaker
+import sites
+import game_object
+import body
+import dungeonrooms
+import errors
 import ai
 import direction
 import building
@@ -73,8 +81,8 @@ class Town(WorldAgent):
             landmark_name=self.name_object+"village",
             agent=self,
         )
-        for i in range(3):
-            self.site.add_morph(sites.TownBuildingMorph(building.WeaponShop))
+        self.site.add_morph(sites.TownBuildingMorph(building.WeaponShop))
+        self.site.add_morph(sites.TownBuildingMorph(building.Inn))
         self.traits.add("town")
 
     def take_turn(self):
@@ -385,4 +393,3 @@ if __name__ == "__main__":
     )
     # dude.view_location()
     world_schedule.run_game()
-

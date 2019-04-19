@@ -3,11 +3,11 @@ from math import floor, sqrt
 try:
     from scipy.stats import norm
 except ImportError:
-#  on my work computer, scipy cannot be installed. This is a workaround.
+    #  on my work computer, scipy cannot be installed. This is a workaround.
     class norm:
         @staticmethod
         def ppf(alpha, loc, scale):
-            return -15     
+            return -15
 
 
 class Body:
@@ -17,6 +17,7 @@ class Body:
         self.owner = owner
         self.short_fatigue = 0
         self.fatigue = 0
+        self.healing_per_rest = 10
         self.max_mana = 0
         self.mana = 0
         self.damage = 0
@@ -70,7 +71,8 @@ class Body:
 
     def get_skill_report(self, verbose=False, alpha=0.1, viewer=None):
         template = "Effective combat skill: {}\n"
-        out = template.format(int(self.owner.get_attack_roll(weapon=None, min_=True)))
+        out = template.format(
+            int(self.owner.get_attack_roll(weapon=None, min_=True)))
         mean = 80/2-30/2  # mean of parry roll - attack roll.
         sd = sqrt(30**2/12+2*40**2/12)
         margin_of_error = norm.ppf(alpha, loc=mean, scale=sd)
@@ -190,6 +192,12 @@ class Body:
         self.fatigue = 0
         self.short_fatigue = 0
         self.bleeding_damage = 0
+
+    def full_rest(self):
+        self.mana = self.max_mana
+        self.damage = max(self.damage-self.healing_per_rest, 0)
+        self.short_fatigue = 0
+        self.fatigue = 0
 
 
 class UndeadBody(Body):

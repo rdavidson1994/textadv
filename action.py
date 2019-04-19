@@ -22,25 +22,6 @@ def match_action_to_string(actor, input_string):
     return Verb.match_action_to_string(actor, input_string)
 
 
-"""
-def match_action_to_string(input_string):
-    backup_match = None
-    for cls in action_class_list:
-        strings, quality = cls.match(input_string)
-        if quality == None:
-            pass
-        elif quality == "good":
-            return cls, strings
-        elif backup_match == None:
-            backup_match, backup_strings = cls, strings
-    else:
-        if backup_match:
-            return backup_match, backup_strings
-        else:
-            return None, ()
-"""
-
-
 class ActionMeta(type):
     def __init__(cls, name, bases, dct):
         if cls.VerbClass and cls.synonyms and not cls.hidden:
@@ -90,8 +71,8 @@ class Action(metaclass=ActionMeta):
 
     def moves_actor(self):
         return (
-                getattr(self, "traverses_portals", False)
-                or getattr(self, "travels_overland", False)
+            getattr(self, "traverses_portals", False)
+            or getattr(self, "travels_overland", False)
         )
 
     def check_target_number(self):
@@ -171,7 +152,7 @@ class Action(metaclass=ActionMeta):
         if not targets_ok:
             self.actor.receive_action_feedback(False, explanation)
             return
-        
+
         final_ok, explanation = self.final_self_check()
         if not final_ok:
             self.actor.receive_action_feedback(False, explanation)
@@ -429,7 +410,7 @@ class Eat(mixins.HeldTarget, SingleTargetAction):
 
 
 class Take(mixins.ItemTarget, SingleTargetAction):
-    synonyms = ["take", "get", "pick up", "grab",]
+    synonyms = ["take", "get", "pick up", "grab", ]
 
     def check_geometry(self):
         if self.actor.has_thing(self.target):
@@ -448,7 +429,8 @@ class Drop(mixins.HeldTarget, SingleTargetAction):
     synonyms = ["drop"]
 
     def affect_game(self):
-        self.target.change_location(self.actor.location, self.actor.coordinates)
+        self.target.change_location(
+            self.actor.location, self.actor.coordinates)
 
 
 class Enter(mixins.Motion, SingleTargetAction):
@@ -617,6 +599,7 @@ class Buy(Transaction):
 class Sell(Transaction):
     synonyms = ["sell"]
     proposed_price = None
+
     class VerbClass(Verb):
         match_strings = ["VERB TOOL to TARGET"]
 
@@ -641,6 +624,36 @@ class Sell(Transaction):
         self.target.money -= self.proposed_price
         self.tool.owner = self.target
 
+
+class RentInnRoom(SingleTargetAction):
+    is_social = True
+    synonyms = ["rent", "rent room"]
+    time_elapsed = 60000
+
+    class VerbClass(Verb):
+        match_strings = ["VERB room from TARGET", "VERB from TARGET"]
+
+    def get_success_string(self, viewer=None):
+        s = self.possible_s(viewer)
+        name = self.actor.get_name(viewer)
+        return f"{name} feel{s} refreshed after a night at the inn."
+
+    def check_geometry(self):
+        inn = self.actor.location
+        if not inn.has_trait("inn"):
+            return False, "This isn't an inn."
+        elif inn.room_price > self.actor.money:
+            return False, "You can't afford to stay here."
+        else:
+            return super().check_geometry()
+
+    def affect_game(self):
+        price = self.actor.location.room_price
+        self.actor.money -= price
+        self.target.money += price
+        self.actor.full_rest()
+
+
 class WildernessFlee(ZeroTargetAction):
     synonyms = ["vanish"]
     hidden = True
@@ -654,7 +667,7 @@ class WildernessFlee(ZeroTargetAction):
             return super().check_traits()
         else:
             return False, "This location is too small for that."
-        
+
 # ROUTINES
 
 
@@ -810,18 +823,31 @@ class GeneralBuyRoutine(SingleActionRoutine, SingleTargetAction):
         else:
             return None
 
+
 class GeneralSellRoutine(SingleActionRoutine, SingleTargetAction):
     synonyms = ["sell"]
     empty_reason = "There is no merchant here to deal with."
-    
+
     def get_single_action(self):
         candidates = self.actor.get_targets_from_trait("merchant")
-        try:
-            merchant = candidates[0]
-        except IndexError:
+        if candidates:
+            return Sell(self.actor, candidates[0], self.target)
+        else:
             return None
-        item = self.target
-        return Sell(self.actor, merchant, item)
+
+
+
+class GeneralRentRoutine(SingleActionRoutine, ZeroTargetAction):
+    synonyms = ["rent", "rent room", "sleep"]
+    empty_reason = "There is no innkeeper here."
+
+    def get_single_action(self):
+        candidates = self.actor.get_targets_from_trait("merchant")
+        if candidates:
+            return RentInnRoom(self.actor, candidates[0])
+        else:
+            return None
+
 
 
 class DefaultStrikeRoutine(SingleActionRoutine, SingleTargetAction):
@@ -881,7 +907,7 @@ class DurationWaitRoutine(Routine, ZeroTargetAction):
             self.expended_duration += 1
             return Wait(self.actor)
         elif self.expended_duration < self.duration:
-            self.expended_duration +=1
+            self.expended_duration += 1
             return LoudWait(self.actor)
         else:
             return None
