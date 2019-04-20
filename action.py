@@ -283,14 +283,17 @@ class Look(DetailAction):
 class Map(DetailAction):
     synonyms = ["recall the surroundings", "map", "show map", "m"]
 
-    def affect_game(self):
-        a = self.actor
-        try:
-            region = a.location.map_node.region
-        except AttributeError:
-            a.ai.display("No map is available.")
-        else:
-            a.ai.display(region.get_text_map(a))
+    def get_success_string(self, viewer=None):
+        return self.actor.location.get_text_map(viewer=viewer)
+
+    # def affect_game(self):
+    #     a = self.actor
+    #     try:
+    #         region = a.location.map_node.region
+    #     except AttributeError:
+    #         a.ai.display("No map is available.")
+    #     else:
+    #         a.ai.display(region.get_text_map(a))
 
 
 class Verbose(DetailAction):
@@ -836,7 +839,6 @@ class GeneralSellRoutine(SingleActionRoutine, SingleTargetAction):
             return None
 
 
-
 class GeneralRentRoutine(SingleActionRoutine, ZeroTargetAction):
     synonyms = ["rent", "rent room", "sleep"]
     empty_reason = "There is no innkeeper here."
@@ -847,7 +849,6 @@ class GeneralRentRoutine(SingleActionRoutine, ZeroTargetAction):
             return RentInnRoom(self.actor, candidates[0])
         else:
             return None
-
 
 
 class DefaultStrikeRoutine(SingleActionRoutine, SingleTargetAction):

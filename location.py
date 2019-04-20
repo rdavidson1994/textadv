@@ -4,7 +4,7 @@ from game_object import Thing, debug
 class Location(Thing):
     def __init__(self, description="", reg=None, *args, **kwargs):
         Thing.__init__(self, *args, **kwargs)
-        self.reg=reg
+        self.reg = reg
         self.map_node = None
         self.traits.add("location")
         self.description = description
@@ -41,6 +41,12 @@ class Location(Thing):
             raise AttributeError
 
         return self.map_node.region.path_to_random(self.map_node)
+
+    def get_text_map(self, viewer=None):
+        if self.map_node is None:
+            return "No map is available."
+        else:
+            return self.map_node.region.get_text_map(viewer=viewer)
 
     def get_description(self, viewer: Thing):
         return self.description

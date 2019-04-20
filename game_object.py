@@ -30,7 +30,7 @@ class Landmark:
             return tuple(displacement)
 
     def get_name(self, viewer=None):
-        return self.name.get_text(viewer)
+        return self.name.get_text(viewer=viewer)
 
     def has_name(self, text):
         return self.name.matches(text)
@@ -55,7 +55,7 @@ class Thing:
             self.location.things.add(self)
             if self.schedule is None and self.location.schedule is not None:
                 self.schedule = self.location.schedule
-            
+
         if isinstance(name, Name):
             self.name_object = name
         elif names:
@@ -93,23 +93,23 @@ class Thing:
         subscribers = self.things_with_trait("listener") | target_set
         broadcast_source = action.actor
         if (
-               getattr(action, "traverses_portals", False)
-               and not action.actor.has_location(self)
-           ):
+            getattr(action, "traverses_portals", False)
+            and not action.actor.has_location(self)
+        ):
             # Departing actor: Announce from portal, not actor
             broadcast_source = action.target
         for sub in subscribers:
             if (
-                    sub in target_set
-                    or self.line_of_sight(sub, broadcast_source)
-               ):
+                sub in target_set
+                or self.line_of_sight(sub, broadcast_source)
+            ):
                 # the order of those conditions matters:
                 # line_of_sight will throw errors on targets outside location
                 sub.hear_announcement(action)
 
     def take_damage(self, amt, damage_type):
         pass
-    
+
     def get_coordinates(self, viewing_location):
         assert viewing_location == self.location
         assert self.coordinates is not None
@@ -364,8 +364,16 @@ class PortalVertex(Thing):
         """Returns a name appropriate to the viewing actor.
         """
         if viewer:
-            direction = self.get_relative_direction(viewer)
-            return self.name + " facing " + str(direction)
+            if (
+                viewer.has_location(self.location)
+                and self.coordinates is not None
+                and viewer.coordinates is not None
+            ):
+                distance = self.location.distance(self, viewer)
+                return f"{self.name}, {distance:.1f} units away"
+            else:
+                direction = self.get_relative_direction(viewer)
+                return self.name + " facing " + str(direction)
         else:
             return self.name
 
@@ -394,10 +402,10 @@ class PortalVertex(Thing):
         return self.edge.other_vertex(self)
 
     def create_landmark(self, name):
-        self.landmark = Landmark(name = name,
-                                 basis = self,)
+        self.landmark = Landmark(name=name,
+                                 basis=self,)
         return self.landmark
-    
+
 
 class PortalEdge:
     def __init__(
@@ -420,7 +428,7 @@ class PortalEdge:
 
         if name != "":
             name_pair = (name, name)
-            
+
         self.vertices = [
             PortalVertex(
                 edge=self,
@@ -447,7 +455,7 @@ class PortalEdge:
         else:
             self.lock = None
         self.direction = tuple(directions)  # eg ("n", "s"), if source is north
-    
+
     @classmethod
     def free_portal(cls, location, direction, coordinates=None, **kwargs):
         # Creates a portal with a specified location, and no partner
@@ -469,10 +477,12 @@ class PortalEdge:
                 # if the hero is entering the site.
                 self.site.update_region()
         if actor.location == self.source.location:
-            actor.change_location(self.target.location, self.target.coordinates)
+            actor.change_location(self.target.location,
+                                  self.target.coordinates)
             actor.nearest_portal = self.target
         elif actor.location == self.target.location:
-            actor.change_location(self.source.location, self.source.coordinates)
+            actor.change_location(self.source.location,
+                                  self.source.coordinates)
             actor.nearest_portal = self.source
         else:
             raise Exception
@@ -504,7 +514,7 @@ class PortalEdge:
 
     def set_vertex_location(self, index, new_location, new_coords=None):
         self.vertices[index].change_location(new_location, new_coords)
-    
+
     def set_target_location(self, new_location, new_coords=None):
         self.set_vertex_location(1, new_location, new_coords)
 
@@ -545,4 +555,3 @@ class GameEndPortal(Portal):
             self.prisoner_freed = True
         actor.vanish()
 """
-
