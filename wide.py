@@ -59,7 +59,7 @@ class Location(location.Location):
             if self.includes_point(new_x, new_y):
                 return new_x, new_y
 
-    def distance(self, first, second):
+    def displacement(self, first, second):
         try:
             a = first.get_coordinates(self)
         except AttributeError:
@@ -68,12 +68,27 @@ class Location(location.Location):
             b = second.get_coordinates(self)
         except AttributeError:
             b = second
-        return self.coordinate_distance(a, b)
+        return (b[0]-a[0], b[1]-a[1])
 
-    def coordinate_distance(self, first, second):
-        x1, y1 = first
-        x2, y2 = second
-        return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+    def distance(self, first, second):
+        disp = self.displacement(first, second)
+        return math.sqrt(sum(x**2 for x in disp))
+
+    def compass_direction(self, first, second):
+        x, y = self.displacement(first, second)
+        angle = math.atan2(y, x)
+        if angle < 0:
+            angle += 2*math.pi
+        directions = ["e","ne","n","nw","w","sw","s","se",]
+
+        petal_width = (2 * math.pi) / len(directions)
+        if angle > 2*math.pi - petal_width/2:
+            return directions[0]
+        else:
+            adjusted_angle = angle + petal_width/2
+            index = math.floor(adjusted_angle / petal_width)
+            return directions[index]
+
 
 
     def line_of_sight(self, first, second, cutoff=None):

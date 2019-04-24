@@ -18,7 +18,10 @@ class ShopkeeperAI(ai.PeacefulAI):
         else:
             greeting_text = "Welcome!"
             self.customers_seen_today.add(act.actor)
-        self.say(greeting_text)
+        if isinstance(self.get_current_action(), action.Wait):
+            self.say(greeting_text, now=True)
+        else:
+            self.say(greeting_text, now=False)
         super().actor_enters_location(act)
 
     def actor_leaves_location(self, act):

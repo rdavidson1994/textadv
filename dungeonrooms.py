@@ -235,6 +235,7 @@ class KoboldCaveEntrance(Entrance):
 
 
 class RuneChamber(GeneratedRoom):
+    map_letter = "Rn"
     def generate_items(self):
         runes.Rune(
             location=self,

@@ -24,10 +24,7 @@ class Landmark:
 
     def vector_from_thing(self, thing):
         if thing.has_location(self.location):
-            point_a = thing.coordinates
-            point_b = self.coordinates
-            displacement = [b-a for a, b in zip(point_a, point_b)]
-            return tuple(displacement)
+            return self.location.displacement(thing, self.coordinates)
 
     def get_name(self, viewer=None):
         return self.name.get_text(viewer=viewer)
@@ -370,7 +367,8 @@ class PortalVertex(Thing):
                 and viewer.coordinates is not None
             ):
                 distance = self.location.distance(self, viewer)
-                return f"{self.name}, {distance:.1f} units away"
+                bearing = self.location.compass_direction(viewer, self).upper()
+                return f"{self.name}, {distance:.1f} units {bearing}"
             else:
                 direction = self.get_relative_direction(viewer)
                 return self.name + " facing " + str(direction)
