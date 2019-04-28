@@ -284,7 +284,7 @@ class Map(DetailAction):
     synonyms = ["recall the surroundings", "map", "show map", "m"]
 
     def get_success_string(self, viewer=None):
-        out = self.actor.location.get_text_map(viewer=viewer)
+        out = self.actor.location.get_text_map(viewer=viewer, full_size=True)
         if out is None:
             return "No map is available."
         else:

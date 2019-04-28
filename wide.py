@@ -2,6 +2,7 @@ import game_object
 import random
 import math
 from string import ascii_lowercase
+from collections import Counter
 
 # logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 import location
@@ -89,8 +90,6 @@ class Location(location.Location):
             index = math.floor(adjusted_angle / petal_width)
             return directions[index]
 
-
-
     def line_of_sight(self, first, second, cutoff=None):
         if cutoff is None:
             cutoff = self.view_distance
@@ -104,48 +103,79 @@ class Location(location.Location):
     def includes_point(self, x, y):
         return 0 <= x <= self.width and 0 <= y <= self.height
 
-    def get_text_map(self, viewer=None, stride_x=0.5, stride_y=1.0):
-        # By default, we map each 0.5x1.0 chunck of land to a character
+    def get_text_map(
+        self,
+        viewer=None,
+        full_size=False,
+        stride_x=1.0,
+        stride_y=1.0,
+        radius=10,
+    ):
+        # By default, we map each 0.5x1.0 chunk of land to two characters
         if viewer is None:
             return "No map is available"
         count_x = int(self.width / stride_x)
         count_y = int(self.height / stride_y)
 
         def character(x, y):
-            on_vert = (x % int(5 / stride_x) == 0)
-            on_horiz = (y % int(5 / stride_y) == 0)
-            if on_vert and on_horiz:
-                return "+"
-            elif on_vert:
-                return "|"
-            elif on_horiz:
-                return "-"
+            on_vertical = (x % int(5 / stride_x) == 0)
+            on_horizontal = (y % int(5 / stride_y) == 0)
+            if on_vertical and on_horizontal:
+                return "+-"
+            elif on_vertical:
+                return "| "
+            elif on_horizontal:
+                return "--"
             else:
-                return " "
-        grid = [[character(x, y) for x in range(count_x)]
-                for y in range(count_y)]
+                return "  "
 
         def set_grid(grid, coordinates, value):
-            x_index = int(coordinates[0]/stride_x)
-            y_index = int(coordinates[1]/stride_y)
+            x_index, y_index = indexes_from_coords(coordinates)
             grid[y_index][x_index] = value
 
-        legend_entries = []
+        def indexes_from_coords(coordinates):
+            x_index = int(coordinates[0] / stride_x)
+            y_index = int(coordinates[1] / stride_y)
+            return x_index, y_index
 
-        for index, landmark in enumerate(viewer.known_landmarks):
-            if index < len(ascii_lowercase):
-                letter = ascii_lowercase[index]
-            else:
-                letter = "*"
-            name = landmark.get_name(viewer)
-            legend_entries.append(f"{letter}: {name}")
-            set_grid(grid, landmark.coordinates, letter)
+        full_grid = [
+                [character(x, y) for x in range(count_x)]
+                for y in range(count_y)
+            ]
+
+        legend_entries = []
+        used_symbols = set()
+        for landmark in viewer.known_landmarks:
+            if full_size or self.distance(viewer, landmark.coordinates) < radius:
+                name = landmark.get_name(viewer)
+                symbol = name[0:2]
+                disambiguation_count = 1
+                while symbol in used_symbols and disambiguation_count < 9:
+                    disambiguation_count += 1
+                    symbol = symbol[0]+str(disambiguation_count)
+                used_symbols.add(symbol)
+                legend_entries.append(f"{symbol}: {name}")
+                set_grid(full_grid, landmark.coordinates, symbol)
 
         if viewer.has_location(self) and viewer.coordinates is not None:
-            set_grid(grid, viewer.coordinates, "@")
+            set_grid(full_grid, viewer.coordinates, "@ ")
             legend_entries.append("@: You")
 
-        map_lines = ["".join(row) for row in grid]
+        if full_size:
+            shown_grid = full_grid
+        else:
+            viewer_x, viewer_y = indexes_from_coords(viewer.coordinates)
+            shown_grid = [
+                [
+                    full_grid[y][x]
+                    for x in range(count_x)
+                    if abs(x-viewer_x) < radius / stride_x
+                ]
+                for y in range(count_y)
+                if abs(y-viewer_y) < radius / stride_y
+            ]
+
+        map_lines = ["".join(row) for row in shown_grid]
         map_string = "\n".join(map_lines[::-1])
 
         legend_string = "\n".join(legend_entries)

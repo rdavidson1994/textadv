@@ -92,7 +92,7 @@ class Region:
             y_bounds[0].coords[1], y_bounds[1].coords[1],
         )
 
-    def get_text_map(self, viewer=None):
+    def get_text_map(self, viewer=None, full_size=False):
         """returns a matrix A[y][x] of characters"""
         x_min, x_max, y_min, y_max = self._bounds()
         i_max = 2 * (x_max - x_min)

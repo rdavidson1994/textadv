@@ -42,11 +42,13 @@ class Location(Thing):
 
         return self.map_node.region.path_to_random(self.map_node)
 
-    def get_text_map(self, viewer=None):
+    def get_text_map(self, viewer=None, full_size=False):
         if self.map_node is None:
             return None
         else:
-            return self.map_node.region.get_text_map(viewer=viewer)
+            return self.map_node.region.get_text_map(
+                viewer=viewer, full_size=full_size
+            )
 
     def get_description(self, viewer: Thing):
         return self.description
