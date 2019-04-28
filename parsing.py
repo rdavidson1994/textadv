@@ -120,8 +120,8 @@ class Parser(AI):
                     full_text = True
                 else:
                     full_text = False
-                out = new_location.describe(self.actor, full_text)
                 self.visited_locations.add(new_location)
+                out = new_location.describe(self.actor, full_text)
                 self.display(out)
 
         elif self.actor.awake:

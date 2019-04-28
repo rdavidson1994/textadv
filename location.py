@@ -44,7 +44,7 @@ class Location(Thing):
 
     def get_text_map(self, viewer=None):
         if self.map_node is None:
-            return "No map is available."
+            return None
         else:
             return self.map_node.region.get_text_map(viewer=viewer)
 
@@ -54,6 +54,9 @@ class Location(Thing):
     def describe(self, viewer, full_text=True):
         """PUBLIC: returns a string description of the location"""
         str_list = []
+        text_map = self.get_text_map(viewer)
+        if text_map:
+            str_list.append(text_map)
         category_list = [("actor", "\nPeople and animals:"),
                          ("item", "\nItems:"),
                          ("interesting", "\nInteresting features:"),
