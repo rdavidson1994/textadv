@@ -110,3 +110,4 @@ test.py
 
 # macOS
 .DS_Store
+.swp
