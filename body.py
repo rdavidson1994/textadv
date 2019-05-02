@@ -24,7 +24,7 @@ class Body:
         self.bleeding_damage = 0
         self.ko_time = 0
         self.stable = True  # if false, needs updates
-        self.mana_regen_rate = 1
+        self.mana_regen_rate = 0
 
     def take_ko(self, amt):
         self.ko_time += amt
