@@ -855,6 +855,15 @@ class GeneralRentRoutine(SingleActionRoutine, ZeroTargetAction):
             return None
 
 
+class ReadRoutine(SingleActionRoutine, SingleTargetAction):
+    synonyms = ["read"]
+    target_traits = ["readable"]
+
+    def get_single_action(self):
+        # placeholder, will need to revist when books exist
+        return Examine(self.actor, self.target)
+
+
 class DefaultStrikeRoutine(SingleActionRoutine, SingleTargetAction):
     synonyms = ["strike", "hit", "attack"]
     priority = 15

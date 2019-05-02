@@ -9,7 +9,7 @@ class Rune(game_object.Thing):
         self.spell = spell
         self.mana_bonus = mana_bonus
         self.actors_affected = set()
-        self.traits.add("interesting")
+        self.traits |= {"interesting", "readable"}
 
     def be_targeted(self, act):
         outcome, text = super().be_targeted(act)
