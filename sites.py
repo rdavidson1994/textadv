@@ -58,7 +58,7 @@ class Site:
     ):
         if "name" not in kwargs:
             kwargs["name_pair"] = (
-                Name("entrance to")+landmark_name,
+                landmark_name,
                 Name("exit")
             )
         portal = portal_type.free_portal(

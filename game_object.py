@@ -15,9 +15,11 @@ class Landmark:
     def __init__(self, name, location=None, coordinates=None, basis=None):
         self.name = Name.accept_string(name)
         if basis:
+            self.basis = basis
             self.location = basis.location
             self.coordinates = basis.coordinates
         else:
+            self.basis = None
             self.location = location
             self.coordinates = coordinates
             assert coordinates and location
@@ -27,10 +29,16 @@ class Landmark:
             return self.location.displacement(thing, self.coordinates)
 
     def get_name(self, viewer=None):
-        return self.name.get_text(viewer=viewer)
+        if self.basis:
+            return self.basis.get_name(viewer=viewer)
+        else:
+            return self.name.get_text(viewer=viewer)
 
     def has_name(self, text):
-        return self.name.matches(text)
+        if self.basis:
+            return self.basis.has_name(text) or self.name.matches(text)
+        else:
+            return self.name.matches(text)
 
 
 class Thing:
