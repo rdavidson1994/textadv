@@ -12,6 +12,7 @@ import errors
 import ai
 import direction
 import building
+import field
 from world import make_player
 from random import random, choice, shuffle
 from population import Population
@@ -40,6 +41,8 @@ class WorldAgent(actor.Actor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ai = TestAI(self)
+        self.fields = []
+        self.create_fields()
         self.destroyed = False
         self.unrest = 0
         self.update_keyword = "agent update"
@@ -53,6 +56,22 @@ class WorldAgent(actor.Actor):
         if keyword == self.update_keyword:
             self.take_turn()
             self.set_timer(self.update_period, self.update_keyword)
+
+    def create_fields(self):
+        pass
+
+    def add_field(self, field):
+        self.fields.append(field)
+
+    def destroy_field(self, field):
+        assert field in self.fields
+        self.fields.remove(field)
+        field.destroy()
+
+    def destroy_fields(self):
+        for field in self.fields:
+            field.destroy()
+        self.fields = []
 
 
 class WorldEvents(WorldAgent):
@@ -164,14 +183,23 @@ class PopulationAgent(WorldAgent):
     def change_site(self, site):
         if self.site:
             self.site.remove_population(self.population)
+            self.destroy_fields()
             if self.population.rendered:
                 self.population.hide_actors()
-        if site:
-            site.add_population(self.population)
         self.site = site
+        if site is not None:
+            site.add_population(self.population)
+            self.create_fields()
+
 
     def build_actors(self) -> List[actor.Actor]:
         pass
+
+
+class NuisanceEncounters(field.Disk):
+    def __init__(self, agent, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.agent = agent
 
 
 class ExternalNuisance(PopulationAgent):
@@ -247,6 +275,7 @@ class ExternalNuisance(PopulationAgent):
             self.vanish()
             print(f"{self.name} was disbanded")
             return
+
 
 
 class BanditGroup(ExternalNuisance):
@@ -362,7 +391,15 @@ if __name__ == "__main__":
         width=50,
         height=50,
     )
-    WorldEvents(world_map)
+
+    world_events = WorldEvents(world_map)
+    world_events.add_field(field.HelloDisk(
+        world_map,
+        radius=100,
+        center=(1, 1),
+        height=1.0
+    ))
+
     town_n = 10
     cave_n = 24
     caves = [

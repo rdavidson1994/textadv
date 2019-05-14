@@ -13,6 +13,7 @@ class Location(location.Location):
 
     def __init__(self, *args, width=30, height=30, **kwargs):
         location.Location.__init__(self, *args, **kwargs)
+        self.encounter_fields = []
         self.width = width
         self.height = height
         self.traits.add("wide")
@@ -103,6 +104,29 @@ class Location(location.Location):
     def includes_point(self, x, y):
         return 0 <= x <= self.width and 0 <= y <= self.height
 
+    def add_encounter_field(self, field):
+        self.encounter_fields.append(field)
+
+    def remove_encounter_field(self, field):
+        self.encounter_fields.remove(field)
+
+    def generate_encounters(self, actor):
+        assert self.has_thing(actor)
+        x, y = actor.coordinates
+        random.shuffle(self.encounter_fields)
+        for field in self.encounter_fields:
+            if (
+                field.targets_actor(actor)
+                and random.random() < field.probability(actor, x, y)
+            ):
+                field.affect_actor(actor)
+                break
+
+    def broadcast_announcement(self, action):
+        if getattr(action, "travels_overland", False):
+            self.generate_encounters(action.actor)
+        return super().broadcast_announcement(action)
+
     def get_text_map(
         self,
         viewer=None,
@@ -111,7 +135,7 @@ class Location(location.Location):
         stride_y=1.0,
         radius=10,
     ):
-        # By default, we map each 0.5x1.0 chunk of land to two characters
+        # By default, we map each 1.0x1.0 chunk of land to two characters
         if viewer is None:
             return "No map is available"
         count_x = int(self.width / stride_x)
