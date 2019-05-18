@@ -1,3 +1,6 @@
+import math
+
+from field import NuisanceEncounters
 from name_object import Name
 import schedule
 import actor
@@ -12,7 +15,6 @@ import errors
 import ai
 import direction
 import building
-import field
 from world import make_player
 from random import random, choice, shuffle
 from population import Population
@@ -191,15 +193,8 @@ class PopulationAgent(WorldAgent):
             site.add_population(self.population)
             self.create_fields()
 
-
     def build_actors(self) -> List[actor.Actor]:
         pass
-
-
-class NuisanceEncounters(field.Disk):
-    def __init__(self, agent, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.agent = agent
 
 
 class ExternalNuisance(PopulationAgent):
@@ -224,11 +219,25 @@ class ExternalNuisance(PopulationAgent):
     def wants_to_morph(self, site):
         return not site.has_morph_type(self.morph_type)
 
+    def populate_encounter(self, encounter_pocket, encounter_field):
+        pass
+
     def site_preference(self, site):
         return 0
 
     def get_morph(self):
         return self.morph_type()
+
+    def create_fields(self):
+        if self.site:
+            field = NuisanceEncounters(
+                self,
+                wide_location=self.location,
+                radius=5,  # TODO: Configurable
+                center=self.site.landmark.coordinates,
+                height=0.09,
+            )
+            self.add_field(field)
 
     def take_turn(self):
         if self.target is None or self.target.destroyed:
@@ -277,7 +286,6 @@ class ExternalNuisance(PopulationAgent):
             return
 
 
-
 class BanditGroup(ExternalNuisance):
     member_name = "gang"
     morph_type = sites.BanditHabitation
@@ -285,34 +293,41 @@ class BanditGroup(ExternalNuisance):
     def build_actors(self):
         actors = []
         for m in range(self.number_of_members):
-            if random() < 0.5:
-                weapon_kind = "sword"
-                damage_type = "sharp"
-                damage_mult = 4+self.power/5
-                title = "bandit swordsman"
-            else:
-                weapon_kind = "mace"
-                damage_type = "blunt"
-                damage_mult = 4+self.power/5
-                title = "bandit maceman"
-
-            given_name = namemaker.make_name()
-            name_and_title = given_name.add(title, template="{}, {}")
-
-            bandit = actor.SquadActor(
-                location=None,
-                name=name_and_title
-            )
+            bandit = self.create_bandit()
             actors.append(bandit)
-
-            weapon = game_object.Item(
-                location=bandit,
-                name=Name(weapon_kind)
-            )
-            weapon.damage_type = damage_type
-            weapon.damage_mult = damage_mult
-
         return actors
+
+    def populate_encounter(self, encounter_pocket, encounter_field):
+        number_of_bandits = max(1, min(5, math.floor(self.power)))
+        for _ in range(number_of_bandits):
+            bandit = self.create_bandit()
+            bandit.ai = ai.WaitingMonsterAI(bandit)
+            bandit.materialize(encounter_pocket)
+
+    def create_bandit(self):
+        if random() < 0.5:
+            weapon_kind = "sword"
+            damage_type = "sharp"
+            damage_mult = 4 + self.power / 5
+            title = "bandit swordsman"
+        else:
+            weapon_kind = "mace"
+            damage_type = "blunt"
+            damage_mult = 4 + self.power / 5
+            title = "bandit maceman"
+        given_name = namemaker.make_name()
+        name_and_title = given_name.add(title, template="{}, {}")
+        bandit = actor.SquadActor(
+            location=None,
+            name=name_and_title
+        )
+        weapon = game_object.Item(
+            location=bandit,
+            name=Name(weapon_kind)
+        )
+        weapon.damage_type = damage_type
+        weapon.damage_mult = damage_mult
+        return bandit
 
 
 class GhoulHorde(ExternalNuisance):
@@ -393,12 +408,6 @@ if __name__ == "__main__":
     )
 
     world_events = WorldEvents(world_map)
-    world_events.add_field(field.HelloDisk(
-        world_map,
-        radius=100,
-        center=(1, 1),
-        height=1.0
-    ))
 
     town_n = 10
     cave_n = 24

@@ -180,6 +180,8 @@ class Parser(AI):
         from action import NullAction
         failure_string = failed_action.is_valid()[1]
         self.display(failure_string)
+        if self.routine:
+            self.routine = None
         return NullAction(self.actor)
 
     def execute_user_input(self):

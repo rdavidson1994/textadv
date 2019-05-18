@@ -1,6 +1,8 @@
+import direction
 import game_object
 import random
 import math
+import encounter
 from string import ascii_lowercase
 from collections import Counter
 
@@ -70,18 +72,34 @@ class Location(location.Location):
             b = second.get_coordinates(self)
         except AttributeError:
             b = second
-        return (b[0]-a[0], b[1]-a[1])
+        return b[0]-a[0], b[1]-a[1]
 
     def distance(self, first, second):
-        disp = self.displacement(first, second)
-        return math.sqrt(sum(x**2 for x in disp))
+        displacement = self.displacement(first, second)
+        return math.sqrt(sum(x**2 for x in displacement))
+
+    def create_pocket(self, actor):
+        assert actor.has_location(self)
+        pocket = encounter.EncounterPocket(
+            sched=self.schedule,
+            description="You are in a pocket dimension for a random encounter"
+        )
+        exit_direction = direction.random(up_and_down=False)
+        encounter.PocketExit(
+            encounter_pocket=pocket,
+            locations=(pocket, self),
+            directions=(exit_direction, exit_direction.opposite),
+            coordinate_pairs=(None, actor.coordinates),
+            name_pair=("exit", "entrance")
+        )
+        return pocket
 
     def compass_direction(self, first, second):
         x, y = self.displacement(first, second)
         angle = math.atan2(y, x)
         if angle < 0:
             angle += 2*math.pi
-        directions = ["e","ne","n","nw","w","sw","s","se",]
+        directions = ["e", "ne", "n", "nw", "w", "sw", "s", "se", ]
 
         petal_width = (2 * math.pi) / len(directions)
         if angle > 2*math.pi - petal_width/2:
@@ -123,9 +141,10 @@ class Location(location.Location):
                 break
 
     def broadcast_announcement(self, action):
+        out = super().broadcast_announcement(action)
         if getattr(action, "travels_overland", False):
             self.generate_encounters(action.actor)
-        return super().broadcast_announcement(action)
+        return out
 
     def get_text_map(
         self,

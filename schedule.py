@@ -42,7 +42,7 @@ class TimerEvent(Event):
         elif self.callback:
             self.callback()
         else:
-            raise Exception("Hey! A timer had no callback or keyword. 'Sup with that?")
+            raise Exception("Hey! A timer had no callback or keyword.")
 
 
 class ActionEvent(Event):

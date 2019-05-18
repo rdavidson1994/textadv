@@ -1,5 +1,7 @@
+import random
 from random import random, randint, sample, shuffle, choice
 
+import errors
 import location
 from direction import north, south, east, west
 import spells
@@ -60,7 +62,7 @@ class CreaturePolicy:
         return self.enemy_type(location, name=name, sched=self.schedule)
 
 
-class Region:
+class UndergroundRegion:
     def __init__(self, sched=None, entrance_portal=None):
         self.node_list = []
         self.connection_list = []
@@ -325,7 +327,7 @@ class Region:
         return self.path_to_goal(start, goal)
 
 
-class Caves(Region):
+class Caves(UndergroundRegion):
     enemy_number = 0
     enemy_adjectives = []
     essential_rooms = ()
@@ -454,31 +456,6 @@ class RuneCave(EmptyCaves):
     essential_rooms = (dungeonrooms.CaveEntrance, dungeonrooms.RuneChamber)
 
 
-# class KoboldCaves(Caves):
-#     essential_rooms = (CaveEntrance, TreasureRoom, Barracks, Kitchen)
-#     optional_rooms = (MessHall, Prison, Apothecary, BossQuarters)
-#     filler_rooms = (CaveFiller,)
-#     breed_count = 4
-#     enemy_number = 6
-#     enemy_adjectives = ["skinny", "tall", "hairy",
-#                         "filthy", "pale", "short", ]
-#
-#     def make_enemy(self, location=None, adjective=""):
-#         name = LegacyName(adjective, "kobold")
-#         return actor.SquadActor(location, name=name, sched=self.schedule)
-#
-#     def make_boss(self, location=None):
-#         boss = actor.Person(location=location,
-#                            names=["kobold leader", "leader", "kobold"],
-#                            sched=self.schedule)
-#         boss.combat_skill = 75
-#         boss.ai = ai.WanderingMonsterAI(boss)
-#         spear = Item(location=boss, name=LegacyName(["crude"],["sword"]))
-#         spear.damage_type = "sharp"
-#         spear.damage_mult = 3
-#         return boss
-
-
 class EmptyTomb(Caves):
     essential_rooms = (
         dungeonrooms.TombEntrance,
@@ -491,23 +468,6 @@ class EmptyTomb(Caves):
     )
     filler_rooms = (dungeonrooms.CaveFiller,)
     breed_count = 2
-
-
-# class GhoulTomb(Caves):
-#     essential_rooms = (TombEntrance, Crypt)
-#     optional_rooms = (MeatChamber, OfferingRoom, Temple, TombSanctum)
-#     filler_rooms = (CaveFiller,)
-#     enemy_number = 4
-#     enemy_adjectives = KoboldCaves.enemy_adjectives
-#     breed_count = 2
-#
-#     def make_enemy(self, location=None, adjective=""):
-#         name = LegacyName(adjective, "ghoul")
-#         ghoul = actor.Person(location, name=name, sched=self.schedule)
-#         ai.WanderingMonsterAI(ghoul)
-#         ghoul.body = body.UndeadBody(ghoul)
-#         ghoul.combat_skill = 60
-#         return ghoul
     
 
 class Connection:
@@ -697,3 +657,30 @@ if __name__ == "__main__":
     debug(john.body.damage)
     debug("Monster damage:")
     debug([(m.name, m.body.damage) for m in my_schedule.actors])
+
+
+class TownRegion:
+    def __init__(self, entrance_portal, sched):
+        self.schedule = sched
+        self.main_location = location.Location(
+            name="town",
+            description="You are in a very placeholder-like town"
+        )
+        self.locations = [self.main_location]
+        entrance_portal.change_location(self.main_location)
+        # building.WeaponShop(self.main_location, sched=self.schedule)
+
+    def arbitrary_location(self):
+        return self.main_location
+
+    def add_room(self, room):
+        self.locations.append(room)
+
+    def room_with_type(self, room_type):
+        candidates = [
+            loc for loc in self.locations if isinstance(loc, room_type)
+        ]
+        if candidates:
+            return random.choice(candidates)
+        else:
+            raise errors.MissingNode

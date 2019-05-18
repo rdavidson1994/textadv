@@ -18,8 +18,8 @@ from squad import Squad
 debug = logging.debug
 
 
-def element(set):
-    for e in set:
+def element(set_):
+    for e in set_:
         return e
 
 
@@ -48,11 +48,17 @@ class AI(Routine):
     def get_action(self):
         if not self.actor.awake:
             return Wait(self.actor)
-        if self.routine is not None:
-            routine_action = self.routine.get_action()
-            if routine_action is not None:
-                return routine_action
-        return self.get_local_action()
+        else:
+            act = super().get_action()
+            assert act is not None
+            return act
+        # if self.routine is not None:
+        #     routine_action = self.routine.get_action()
+        #     if routine_action is not None and routine_action.is_valid()[0]:
+        #         return routine_action
+        #     else:
+        #         self.routine = None
+        # return self.get_local_action()
 
     def get_current_action(self):
         try:
@@ -251,20 +257,6 @@ class SquadAI(AI):
             self.enemies = enemies
             super().__init__(*args, **kwargs)
 
-        # def build_portal_list(self):
-        #     paths = []
-        #     for enemy, sighting in self.enemies.items():
-        #         try:
-        #             target_node = sighting.location.map_node
-        #         except AttributeError:
-        #             return []
-        #         paths.append(self.map_.path_to_goal(self.home_node, target_node))
-        #     best = min(paths, key=len)
-        #     if best:
-        #         return best
-        #     else:
-        #         return []
-
         def build_portal_list(self):
             paths = []
             for enemy, sighting in self.enemies.items():
@@ -280,7 +272,6 @@ class SquadAI(AI):
                     return best
 
             return []
-
 
     def nearby_enemies(self):
         things = self.actor.location.things

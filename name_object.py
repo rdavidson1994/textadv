@@ -10,6 +10,7 @@ except ImportError:
     wn = None
     using_nltk = False
 
+
 def recursive_hypernyms(synset):
     assert using_nltk
     next_hypernyms = synset.hypernyms()

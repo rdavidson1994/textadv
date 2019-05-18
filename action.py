@@ -552,6 +552,8 @@ class VectorTravel(ZeroTargetAction):
             self.new_coordinates = None
 
     def check_geometry(self):
+        if not self.actor.location.has_trait("wide"):
+            return False, "You can't travel overland from here."
         if self.new_coordinates is None:
             return False, "You can't travel that way from here."
         elif not self.actor.location.includes_point(*self.new_coordinates):
@@ -756,6 +758,7 @@ class Routine:
             sub_action = self.routine.get_action()
             if sub_action is None:
                 self.routine = None
+                return self.get_local_action()
             elif not sub_action.is_valid()[0]:
                 self.routine = None
                 return self.invalid_action_fallback(sub_action)
@@ -902,6 +905,25 @@ class RestRoutine(Routine, ZeroTargetAction):
             return Wait(self.actor)
         else:
             return None
+
+
+class ExitRoutine(SingleActionRoutine, ZeroTargetAction):
+    synonyms = ["exit", "leave"]
+
+    def get_single_action(self):
+        candidates = self.actor.get_valid_targets()
+        portals = [c for c in candidates if c.has_trait("portal")]
+        if len(portals) == 0:
+            return FailAction(self.actor, "There are no exits from here.")
+        elif len(portals) == 1:
+            return Enter(self.actor, portals[0])
+        else:
+            exits = [p for p in portals if p.has_name("exit")]
+            if len(exits) == 1:
+                return Enter(self.actor, exits[0])
+            else:
+                return FailAction(self.actor, "There are multiple exits.")
+
 
 
 class DurationWaitRoutine(Routine, ZeroTargetAction):

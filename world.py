@@ -33,7 +33,7 @@ def make_player(location, coordinates, landmarks=set(), use_web_output=False):
     )
     sword.damage_type = "sharp"
     sword.damage_mult = 6
-    phrase.QuitPhrase(my_parser, ["quit", "exit"])
+    phrase.QuitPhrase(my_parser, ["quit"])
     phrase.InventoryPhrase(my_parser, ["i", "inventory"])
     return john
 

@@ -545,19 +545,3 @@ class Door(PortalEdge):
         )
 
 
-"""
-class GameEndPortal(Portal):
-    prisoner_freed = False
-
-    def be_entered(self, actor):
-        if actor.has_trait("hero"):
-            actor.schedule.end_game = True
-            print("Congrats! You made it out of there alive.")
-            if actor.has_thing_with_name("chest"):
-                print("You even have some treasure to show for it!")
-            if self.prisoner_freed:
-                print("And you freed the prisoner too!")
-        elif actor.has_name("prisoner"):
-            self.prisoner_freed = True
-        actor.vanish()
-"""
