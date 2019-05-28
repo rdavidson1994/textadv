@@ -8,7 +8,7 @@ import schedule
 import sites
 import spells
 from direction import north, south, east, west, up, down
-from wide import Location
+from wide import Overworld
 import population
 
 
@@ -53,8 +53,8 @@ class World:
 class ActorTest(World):
     def __init__(self):
         super().__init__()
-        self.test_location = Location(
-            description="Test Location",
+        self.test_location = Overworld(
+            description="Test Overworld",
             sched=self.schedule
         )
         self.actor = make_player(
@@ -68,7 +68,7 @@ class Static(World):
         super().__init__(save_manager=save_manager)
         self.directions = [north, south, east, west, up, down]
 
-        plains = Location(
+        plains = Overworld(
             description="You stand in a grassy field",
             sched=self.schedule,
         )

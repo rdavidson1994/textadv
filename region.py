@@ -659,12 +659,35 @@ if __name__ == "__main__":
     debug([(m.name, m.body.damage) for m in my_schedule.actors])
 
 
+class VillageCenter(location.Location):
+    def __init__(self, *args, world_agent, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.agent = world_agent
+
+    def get_description(self, viewer):
+        name = self.agent.get_name(viewer)
+        unrest = self.agent.unrest
+        if self.agent.destroyed:
+            verb = "lies in ruins"
+        elif unrest < 10:
+            verb = "is flourishing"
+        elif unrest < 20:
+            verb = "is doing fine"
+        elif unrest < 30:
+            verb = "has seen better days"
+        elif unrest < 40:
+            verb = "is struggling to survive"
+        else:
+            verb = "is on the brink of collapse"
+        return f"The village of {name} {verb} (unrest={unrest})."
+
+
 class TownRegion:
-    def __init__(self, entrance_portal, sched):
+    def __init__(self, entrance_portal, sched, agent):
         self.schedule = sched
-        self.main_location = location.Location(
+        self.main_location = VillageCenter(
             name="town",
-            description="You are in a very placeholder-like town"
+            world_agent=agent
         )
         self.locations = [self.main_location]
         entrance_portal.change_location(self.main_location)

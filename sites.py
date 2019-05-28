@@ -112,7 +112,9 @@ class TownSite(Site):
         return False
 
     def construct_base_region(self):
-        self.region = TownRegion(self.entrance_portal, self.schedule)
+        self.region = TownRegion(
+            self.entrance_portal, self.schedule, self.agent
+        )
 
 
 class TownBuildingMorph(Morph):
@@ -149,12 +151,6 @@ class RuneCave(RegionSite):
 
 class Tomb(RegionSite):
     region_type = region.EmptyTomb
-
-
-class PocketSite(Site):
-    def __init__(self, *args, pocket_location, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.world_map = world_map
 
 
 class Habitation(Morph):

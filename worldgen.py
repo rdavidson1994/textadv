@@ -303,6 +303,7 @@ class BanditGroup(ExternalNuisance):
             bandit = self.create_bandit()
             bandit.ai = ai.WaitingMonsterAI(bandit)
             bandit.materialize(encounter_pocket)
+            encounter_pocket.add_actor(bandit)
 
     def create_bandit(self):
         if random() < 0.5:
@@ -401,7 +402,7 @@ class KoboldGroup(ExternalNuisance):
 
 if __name__ == "__main__":
     world_schedule = schedule.Schedule()
-    world_map = wide.Location(
+    world_map = wide.Overworld(
         sched=world_schedule,
         width=50,
         height=50,

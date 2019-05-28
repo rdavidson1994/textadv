@@ -10,7 +10,7 @@ from collections import Counter
 import location
 
 
-class Location(location.Location):
+class Overworld(location.Location):
     view_distance = 10
 
     def __init__(self, *args, width=30, height=30, **kwargs):
@@ -227,9 +227,9 @@ class Location(location.Location):
 
 """
 my_schedule = schedule.Schedule()
-plains = thing.Location(description="You are standing in field of grass.")
-house = thing.Location(description="You are in a house.")
-stronghold = thing.Location(description="You are in a stronghold")
+plains = thing.Overworld(description="You are standing in field of grass.")
+house = thing.Overworld(description="You are in a house.")
+stronghold = thing.Overworld(description="You are in a stronghold")
 
 sword = thing.Item(location=plains,
                    name="iron longsword",
