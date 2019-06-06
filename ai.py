@@ -94,7 +94,7 @@ class AI(Routine):
     def set_routine(self, routine, now=False):
         self.routine = routine
         if now:
-            self.actor.cancel_actions()
+             self.actor.cancel_actions()
 
     def set_action(self, action, now=False):
         routine = WrapperRoutine(action)

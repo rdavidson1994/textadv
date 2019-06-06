@@ -129,9 +129,14 @@ class Parser(AI):
             if not action.quiet:
                 self.display(text)
             my_action = self.get_current_action()
+            if my_action:
+                previously_dismissed = self.last_interrupt_request == my_action
+            else:
+                previously_dismissed = False
+            acting = self.routine or my_action
             conditions = (
-                my_action is not None,
-                self.last_interrupt_request != my_action,
+                acting,
+                not previously_dismissed,
                 text != "SILENCE",
                 not self.taking_hostile_action(),
             )

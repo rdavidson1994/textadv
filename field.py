@@ -41,9 +41,4 @@ class NuisanceEncounters(Disk):
         self.agent = agent
 
     def affect_actor(self, actor):
-        group_name = self.agent.get_name(actor)
-        message = f"You are attacked by {group_name}..."
-        actor.receive_text_message(message)
-        encounter_pocket = self.location.create_pocket(actor)
-        self.agent.populate_encounter(encounter_pocket, self)
-        actor.change_location(encounter_pocket)
+        self.agent.encounter_actor(actor)
