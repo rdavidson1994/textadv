@@ -75,10 +75,6 @@ class Actor(game_object.Thing):
     def set_routine(self, routine):
         self.ai.set_routine(routine)
 
-    def special_actor_effects(self, action):
-        debug("Special actor effects performed")
-        return True, ""
-
     def receive_action_feedback(self, success, string):
         pass
 

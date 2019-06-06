@@ -10,8 +10,5 @@ class AmbushActor(action.SingleTargetAction):
     hidden = True
     synonyms = ["ambush"]
 
-    def is_valid(self):
-        return super().is_valid()
-
     def affect_game(self):
         self.actor.ambush_actor(self.target)
