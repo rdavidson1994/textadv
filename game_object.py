@@ -233,9 +233,9 @@ class Thing:
         return True, ""
 
     def get_name(self, viewer=None):
-        '''PUBLIC: Return a name appropriate to the viewer
+        """PUBLIC: Return a name appropriate to the viewer
         arg viewer: The actor who is looking at this object.
-        return: A name for this object appropriate to the viewer'''
+        return: A name for this object appropriate to the viewer"""
         if viewer is None:
             web = False
         else:
