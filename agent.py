@@ -195,7 +195,7 @@ class PopulationAgent(WorldAgent):
             site.add_population(self.population)
             self.create_fields()
 
-    def build_actors(self) -> List[actor.Actor]:
+    def build_actors(self, number=None) -> List[actor.Actor]:
         pass
 
 
@@ -229,8 +229,15 @@ class ExternalNuisance(PopulationAgent):
     def wants_to_morph(self, site):
         return not site.has_morph_type(self.morph_type)
 
-    def populate_encounter(self, encounter_pocket, encounter_field):
-        pass
+    def encounter_quantity(self):
+        return 3
+
+    def populate_encounter(self, encounter_pocket):
+        # TODO: un-hardcode the AI
+        for actor in self.build_actors(self.encounter_quantity()):
+            encounter_pocket.add_actor(actor)
+            actor.materialize(encounter_pocket)
+            actor.ai = ai.WaitingMonsterAI(actor)
 
     def site_preference(self, site):
         return 0
@@ -300,7 +307,7 @@ class ExternalNuisance(PopulationAgent):
 
     def ambush_actor(self, other):
         encounter_pocket = other.location.create_pocket(other)
-        self.populate_encounter(encounter_pocket, self)
+        self.populate_encounter(encounter_pocket)
         other.change_location(encounter_pocket)
 
 
@@ -308,15 +315,20 @@ class BanditGroup(ExternalNuisance):
     member_name = "gang"
     morph_type = sites.BanditHabitation
 
-    def build_actors(self):
+    def build_actors(self, number=None):
         actors = []
-        for m in range(self.number_of_members):
+        if number is None:
+            number = self.number_of_members
+        for m in range(number):
             bandit = self.create_bandit()
             actors.append(bandit)
         return actors
 
-    def populate_encounter(self, encounter_pocket, encounter_field):
-        number_of_bandits = max(1, min(5, math.floor(self.power)))
+    def encounter_quantity(self):
+        return max(1, min(5, math.floor(self.power)))
+
+    def populate_encounter(self, encounter_pocket):
+        number_of_bandits = self.encounter_quantity()
         for _ in range(number_of_bandits):
             bandit = self.create_bandit()
             bandit.ai = ai.WaitingMonsterAI(bandit)
@@ -360,12 +372,15 @@ class GhoulHorde(ExternalNuisance):
         else:
             return 0
 
-    def build_actors(self):
+    def build_actors(self, number=None):
         adjectives = [
-            "peeling", "thin", "hairy", "spotted", "bloated", "short",
+            "peeling", "thin", "hairy", "spotted", "bloated", "sho  rt",
         ]
+        if number is None:
+            number = len(adjectives)
+            shuffle(adjectives)
         actors = []
-        for adjective in adjectives:
+        for adjective in adjectives[:number]:
             ghoul = actor.Person(name=Name(adjective + " ghoul"))
             ai.WanderingMonsterAI(ghoul)
             ghoul.body = body.UndeadBody(ghoul)
@@ -392,9 +407,12 @@ class KoboldGroup(ExternalNuisance):
         except errors.MissingNode:
             return region.arbitrary_location()
 
-    def build_actors(self):
+    def build_actors(self, number=None):
         actors = []
-        for adjective in self.adjectives:
+        if number is None:
+            number = len(self.adjectives)
+            shuffle(self.adjectives)
+        for adjective in self.adjectives[:number]:
             kobold = actor.SquadActor(
                 location=None,
                 name=Name(adjective) + "kobold"
