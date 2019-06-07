@@ -263,18 +263,17 @@ class Person(Actor):
             parry_roll = self.get_parry_roll()
             if parry_roll >= 2 * action.attack_roll:
                 self.ai.display("You easily parry " + name)
-                self.body.take_fatigue(3)
+                self.body.take_fatigue(2)
                 return False, "Your attack is easily parried."
             elif parry_roll >= 1.3 * action.attack_roll:
-                self.body.take_fatigue(6)
+                self.body.take_fatigue(3)
                 self.ai.display("You parry " + name)
                 return False, "Your attack is parried."
             elif parry_roll >= action.attack_roll:
-                self.body.take_fatigue(9)
+                self.body.take_fatigue(4)
                 self.ai.display("You barely parry " + name)
                 return False, "Your attack is barely parried."
             else:
-                self.body.take_fatigue(9)
                 self.ai.display("You fail to parry " + name)
         return super().be_targeted(action)
 
