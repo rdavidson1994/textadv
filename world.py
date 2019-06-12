@@ -1,4 +1,5 @@
 import actor
+import agent
 import building
 import game_object
 import location
@@ -8,6 +9,7 @@ import schedule
 import sites
 import spells
 from direction import north, south, east, west, up, down
+from direction import random as random_direction
 from wide import Overworld
 import population
 
@@ -53,9 +55,9 @@ class World:
 class ActorTest(World):
     def __init__(self):
         super().__init__()
-        self.test_location = Overworld(
+        self.test_location = location.Location(
             description="Test Overworld",
-            sched=self.schedule
+            sched=self.schedule,
         )
         self.actor = make_player(
             location=self.test_location,
@@ -63,8 +65,29 @@ class ActorTest(World):
         )
 
 
+class SiteTest(World):
+    def __init__(self, site_type, save_manager=None):
+        super().__init__(save_manager)
+        self.overworld = Overworld(
+            sched=self.schedule,
+            width=10,
+            height=10,
+        )
+        site_type.at_point(
+            location=self.overworld,
+            coordinates=(5,5),
+            direction=down,
+            landmark_name=name_object.Name("test site"),
+        )
+        self.actor = make_player(
+            location=self.overworld,
+            coordinates=(5,5),
+        )
+
+
+
 class Static(World):
-    def __init__(self, use_web_output=False, save_manager=None):
+    def __init__(self, use_web_output=False, save_manager=None, site_type=sites.Cave):
         super().__init__(save_manager=save_manager)
         self.directions = [north, south, east, west, up, down]
 
@@ -79,7 +102,7 @@ class Static(World):
             coordinates=(15, 14),
             name="slope",
         )
-        cave_site = sites.Cave(
+        cave_site = site_type(
             sched=self.schedule,
             entrance_portal=caves_portal.target
         )

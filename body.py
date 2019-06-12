@@ -12,6 +12,7 @@ except ImportError:
 
 class Body:
     bleeds = True
+    death_threshold = 300
 
     def __init__(self, owner):
         self.owner = owner
@@ -131,7 +132,7 @@ class Body:
             duration = randint(10, 15)
             self.take_ko(duration)
 
-        if acute_damage >= 300:
+        if acute_damage >= self.death_threshold:
             self.die(amt, typ)
         self.damage += amt
         self.owner.notice_damage(amt, typ)
@@ -172,7 +173,7 @@ class Body:
     def get_ko_cutoff(self):
         y = -1
         while y <= self.damage:
-            y = floor(310 * betavariate(7, 4))
+            y = floor((self.death_threshold+10) * betavariate(7, 4))
         return y
 
     def inv_ko_cdf(self, alpha):
@@ -182,8 +183,8 @@ class Body:
         sample.sort()
         rank = int(sample_size * alpha)
         percentile = sample[rank]
-        if percentile > 300:
-            return 300
+        if percentile > self.death_threshold:
+            return self.death_threshold
         else:
             return percentile
 

@@ -89,6 +89,9 @@ class WorldEvents(WorldAgent):
         if random() < 1/75:
             kobolds = KoboldGroup.in_world(self.world)
             print(f"{kobolds.name} emerged from underground")
+        if random() < 1/50:
+            ants = GiantAntSwarm.in_world(self.world)
+            print(f"{ants.name} surfaced, hungry for food")
 
 
 class Town(WorldAgent):
@@ -256,41 +259,59 @@ class ExternalNuisance(PopulationAgent):
             )
             self.add_field(field)
 
+    def own_site_preference(self):
+        return -float("inf")
+
+    def create_own_site(self):
+        return None
+
+    def find_target(self):
+        towns = self.location.things_with_trait(
+            "town", self.coordinates, 15
+        )
+        active_towns = set(t for t in towns if not t.destroyed)
+        self.target = set_choice(active_towns)
+        if self.target is None:
+            print(f"Having no suitable targets, {self.name} disbanded")
+            self.vanish()
+            return False
+        print(f"{self.name} turned their eyes to {self.target.name}")
+        self.move_to(self.target)
+        if self.site:
+            print(f"{self.name} abandoned {self.site.get_name()}")
+            self.change_site(None)
+
+    def acquire_site(self):
+        nearby_sites = self.location.sites(
+            center=self.coordinates,
+            radius=10,
+        )
+        candidate_sites = [
+            site for site in nearby_sites if site.allows_population(self)
+        ]
+        if not candidate_sites:
+            print(f"Finding no suitable home, {self.name} disbanded")
+            self.vanish()
+            return False
+        else:
+            shuffle(candidate_sites)
+            site = max(candidate_sites, key=self.site_preference)
+            if self.site_preference(site) < self.own_site_preference():
+                site = self.create_own_site()
+            self.change_site(site)
+            if self.wants_to_morph(site):
+                site.add_morph(self.get_morph())
+            print(f"{self.name} took {site.get_name()}")
+
     def take_turn(self):
         if self.target is None or self.target.destroyed:
-            towns = self.location.things_with_trait(
-                "town", self.coordinates, 15
-            )
-            active_towns = set(t for t in towns if not t.destroyed)
-            self.target = set_choice(active_towns)
-            if self.target is None:
-                print(f"Having no suitable targets, {self.name} disbanded")
-                self.vanish()
+            target_found = self.find_target()
+            if not target_found:
                 return
-            print(f"{self.name} turned their eyes to {self.target.name}")
-            self.move_to(self.target)
-            if self.site:
-                print(f"{self.name} abandoned {self.site.get_name()}")
-                self.change_site(None)
         if not self.site:
-            nearby_sites = self.location.sites(
-                center=self.coordinates,
-                radius=10,
-            )
-            candidate_sites = [
-                site for site in nearby_sites if site.allows_population(self)
-            ]
-            if not candidate_sites:
-                print(f"Finding no suitable home, {self.name} disbanded")
-                self.vanish()
+            site_acquired = self.acquire_site()
+            if not site_acquired:
                 return
-            else:
-                shuffle(candidate_sites)
-                site = max(candidate_sites, key=self.site_preference)
-                self.change_site(site)
-                if self.wants_to_morph(site):
-                    site.add_morph(self.get_morph())
-                print(f"{self.name} took {site.get_name()}")
 
         self.power -= 0.1
         if random() < 1/10 and not self.target.destroyed:
@@ -389,6 +410,71 @@ class GhoulHorde(ExternalNuisance):
         return actors
 
 
+class GiantAntSwarm(ExternalNuisance):
+    member_name = "ants"
+
+    def create_own_site(self):
+        coordinates = self.location.random_in_circle(
+            center=self.coordinates, radius=5
+        )
+        return sites.Hive.at_point(
+            location=self.location,
+            coordinates=coordinates,
+            direction=direction.down,
+            landmark_name=self.name+"'s hive"
+        )
+
+    def site_preference(self, site):
+        distance = self.location.distance(self, site.landmark.coordinates)
+        return 10 - distance
+
+    def own_site_preference(self):
+        return 7.5
+
+    def wants_to_morph(self, site):
+        return False
+
+    @staticmethod
+    def boss_location_function(region):
+        try:
+            return region.room_with_type(
+                room_type=dungeonrooms.QueenApartment,
+                randomize=True
+            )
+        except errors.MissingNode:
+            return region.arbitrary_location()
+
+    def build_actors(self, number=None):
+        # TODO: Link enemy number to power
+        actors = []
+        if number is None:
+            number = 7
+            queen = actor.Person(
+                location=None,
+                name=Name("giant ant queen")
+            )
+            queen.body.death_threshold = 600
+            queen.damage_type = "sharp"
+            queen.damage_mult = 3
+            queen.combat_skill = 60
+            # TODO: Ants die when queen dies
+            self.population.location_functions[queen] = self.boss_location_function
+
+
+        for _ in range(number):
+            ant = actor.Person(
+                location=None,
+                name=Name("giant ant")
+            )
+            ant.damage_type = "sharp"
+            ant.damage_mult = 2
+            ant.combat_skill = 30
+            ant.ai = ai.WanderingMonsterAI(ant)
+            actors.append(ant)
+        return actors
+
+
+
 class KoboldGroup(ExternalNuisance):
     member_name = "kobolds"
     adjectives = [
@@ -408,6 +494,7 @@ class KoboldGroup(ExternalNuisance):
             return region.arbitrary_location()
 
     def build_actors(self, number=None):
+        #TODO: Refactor all "number != None" branches into a "make_actor" branch
         actors = []
         if number is None:
             number = len(self.adjectives)

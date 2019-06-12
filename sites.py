@@ -141,6 +141,8 @@ class RegionSite(Site):
         )
 
 
+# TODO: Make some kind of a class-factory for the following RegionSites?
+
 class Cave(RegionSite):
     region_type = region.EmptyCaves
 
@@ -151,6 +153,10 @@ class RuneCave(RegionSite):
 
 class Tomb(RegionSite):
     region_type = region.EmptyTomb
+
+
+class Hive(RegionSite):
+    region_type = region.GiantInsectHive
 
 
 class Habitation(Morph):

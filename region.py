@@ -63,6 +63,8 @@ class CreaturePolicy:
 
 
 class UndergroundRegion:
+    reconnect_probability = 0.5
+
     def __init__(self, sched=None, entrance_portal=None):
         self.node_list = []
         self.connection_list = []
@@ -452,6 +454,21 @@ class EmptyCaves(Caves):
     filler_rooms = (dungeonrooms.CaveFiller,)
 
 
+class GiantInsectHive(Caves):
+    reconnect_probability = 1.0
+    breed_count = 5
+    essential_rooms = (
+        dungeonrooms.HiveEntrance,
+        dungeonrooms.QueenApartment,
+        dungeonrooms.InsectFoodStorage,
+        dungeonrooms.InsectNest,
+        dungeonrooms.InsectTreasureRoom,
+    )
+    optional_rooms = ()
+    filler_rooms = (dungeonrooms.HiveFiller,)
+
+
+
 class RuneCave(EmptyCaves):
     essential_rooms = (dungeonrooms.CaveEntrance, dungeonrooms.RuneChamber)
 
@@ -570,7 +587,7 @@ class Node:
                 found_con = self.region.connection_with_endpoints(
                     self, found_node
                 )
-                if found_con is None and random() < 0.5:
+                if found_con is None and random() < self.region.reconnect_probability:
                     Connection(self.region, self, found_node, d)
             else:
                 Node(self.region, target_vector, self, d)

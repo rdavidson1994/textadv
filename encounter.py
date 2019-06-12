@@ -9,7 +9,8 @@ class EncounterPocket(location.Location):
 
     def offload(self):
         for actor in self.actors:
-            actor.vanish()
+            if actor.alive:
+                actor.vanish()
 
     def add_actor(self, actor):
         self.actors.append(actor)

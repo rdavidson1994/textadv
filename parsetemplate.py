@@ -121,6 +121,7 @@ class ParserManager:
             cls.files_read[filename] = template_dict
         return TemplateParser(cls.files_read[filename][key])
 
+
 class RoomTemplateParser(TemplateParser):
     with open(full_path("room_descriptions.txt")) as f:
         file_text = f.read()
@@ -177,9 +178,10 @@ def room_test():
     print("Furnish test: "+str(tr.has_furnishing("chest")))
     print(rtp.full_parse())
 
+
 def apothecary_test():
     from dungeonrooms import Apothecary
-    a = Apothecary()
+    Apothecary()
     
 
 if __name__ == "__main__":

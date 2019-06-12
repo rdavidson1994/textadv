@@ -365,6 +365,16 @@ class PortalVertex(Thing):
     def get_coordinates(self, viewing_location):
         return self.coordinates
 
+    def has_name(self, name):
+        sup = super().has_name(name)
+        if sup:
+            return True
+        elif name == "exit" and len(self.location.things_with_trait("portal")) == 1:
+            return True
+        else:
+            return False
+
+
     def get_name(self, viewer=None):
         """Returns a name appropriate to the viewing actor.
         """

@@ -324,6 +324,10 @@ class Person(Actor):
             output += " (unconscious)"
         return output
 
+class AntQueen(Person):
+    def die(self, damage_amount=0, damage_type=None):
+        super()
+
 
 class WaitingActor(Person):
     def __init__(self, *args, **kwargs):
