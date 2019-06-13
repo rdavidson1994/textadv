@@ -194,6 +194,8 @@ class Person(Actor):
         self.cancel_actions()
 
     def die(self, damage_amount=0, damage_type=None):
+        if not self.alive:
+            raise Exception("Can't die twice")
         self.pass_out(show_message=False)
         self.create_corpse()
         if damage_type == "sharp":
@@ -325,8 +327,20 @@ class Person(Actor):
         return output
 
 class AntQueen(Person):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ants = []
+        self.ai = ai.WaitingMonsterAI(self)
+        self.body.death_threshold = 600
+        self.damage_type = "sharp"
+        self.damage_mult = 3
+        self.combat_skill = 60
+
     def die(self, damage_amount=0, damage_type=None):
-        super()
+        super().die(damage_amount, damage_type)
+        for ant in self.ants:
+            if ant.alive:
+                ant.die()
 
 
 class WaitingActor(Person):

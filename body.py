@@ -119,6 +119,10 @@ class Body:
 
     def take_damage(self, amt, typ):
         acute_damage = self.damage + amt * 3
+        if acute_damage >= self.death_threshold:
+            self.die(amt, typ)
+            return
+
         if amt >= 10 and typ == "sharp" and self.bleeds:
             self.bleeding_damage += floor(amt / 10)
             if self.stable:
@@ -131,9 +135,6 @@ class Body:
         if ko_damage > self.get_ko_cutoff():
             duration = randint(10, 15)
             self.take_ko(duration)
-
-        if acute_damage >= self.death_threshold:
-            self.die(amt, typ)
         self.damage += amt
         self.owner.notice_damage(amt, typ)
 

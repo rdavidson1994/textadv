@@ -447,17 +447,14 @@ class GiantAntSwarm(ExternalNuisance):
     def build_actors(self, number=None):
         # TODO: Link enemy number to power
         actors = []
+        queen = None
         if number is None:
             number = 7
-            queen = actor.Person(
+            queen = actor.AntQueen(
                 location=None,
                 name=Name("giant ant queen")
             )
-            queen.body.death_threshold = 600
-            queen.damage_type = "sharp"
-            queen.damage_mult = 3
-            queen.combat_skill = 60
-            # TODO: Ants die when queen dies
+            actors.append(queen)
             self.population.location_functions[queen] = self.boss_location_function
 
 
@@ -471,6 +468,8 @@ class GiantAntSwarm(ExternalNuisance):
             ant.combat_skill = 30
             ant.ai = ai.WanderingMonsterAI(ant)
             actors.append(ant)
+            if queen:
+                queen.ants.append(ant)
         return actors
 
 
