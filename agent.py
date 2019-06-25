@@ -315,8 +315,9 @@ class ExternalNuisance(PopulationAgent):
 
         self.power -= 0.1
         if random() < 1/10 and not self.target.destroyed:
-            print(f"{self.name} attacked {self.target.get_name()}")
-            self.target.unrest += self.power/2
+            new_unrest = self.target.unrest + self.power/2
+            print(f"{self.name} attacked {self.target.get_name()} (unrest {self.target.unrest}->{new_unrest})")
+            self.target.unrest = new_unrest
             self.power += 4/self.target.unrest
         if self.power <= 0:
             self.vanish()
