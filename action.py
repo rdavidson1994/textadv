@@ -274,7 +274,7 @@ class DetailAction(ZeroTargetAction):
 
 
 class Look(DetailAction):
-    synonyms = ["look", "examine", "x"]
+    synonyms = ["look", "examine", "x", "l"]
 
     def affect_game(self):
         self.actor.view_location()
