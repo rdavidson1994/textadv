@@ -98,18 +98,35 @@ class TemplateParser:
         out = re.sub(r"[{}]", "", out)
         out = re.sub(r"\.",". ",out)
         out = re.sub(r",",", ",out)
-        out = re.sub(r"(?<=[a-zA-Z])\s+(?=[.,])","",out)
+        out = re.sub(r"(?<=[a-zA-Z])\s+(?=[.,])", "", out)
         out = re.sub(r"\s+", " ", out)
         out = re.sub(r"\.\s*,", ",", out)
         out = "\n".join(textwrap.wrap(out, 70))
         return out
 
 
+class RoomTemplateParser(TemplateParser):
+    # with open(full_path("room_descriptions.txt")) as f:
+    #     file_text = f.read()
+    # templates = file_text.split("@")
+    # templates.remove("")
+    # pairs = [template.split(None, 1) for template in templates]
+    # # noinspection PyTypeChecker
+    # template_dict = dict(pairs)
+
+    def __init__(self, room, string):
+        super().__init__(string)
+        self.room = room
+
+    def evaluate_token(self, token):
+        return self.room.evaluate_token(token)
+
+
 class ParserManager:
     files_read = {}
 
     @classmethod
-    def get_parser(cls, filename, key):
+    def get_parser(cls, room, filename, key):
         if filename not in cls.files_read:
             with open(full_path(filename)) as f:
                 file_text = f.read()
@@ -119,31 +136,7 @@ class ParserManager:
             # noinspection PyTypeChecker
             template_dict = dict(pairs)
             cls.files_read[filename] = template_dict
-        return TemplateParser(cls.files_read[filename][key])
-
-
-class RoomTemplateParser(TemplateParser):
-    with open(full_path("room_descriptions.txt")) as f:
-        file_text = f.read()
-    templates = file_text.split("@")
-    templates.remove("")
-    pairs = [template.split(None, 1) for template in templates]
-    # noinspection PyTypeChecker
-    template_dict = dict(pairs)
-
-    def __init__(self, room, file_key=None, newer_room=None):
-        self.newer_room = newer_room
-        if file_key is None:
-            file_key = room.__class__.__name__
-        try:
-            string = self.template_dict[file_key]
-        except KeyError:
-            string = "Template not found"
-        super().__init__(string)
-        self.room = room
-
-    def evaluate_token(self, token):
-        return self.room.evaluate_token(token)
+        return RoomTemplateParser(room, cls.files_read[filename][key])
 
 
 def test():
@@ -172,7 +165,7 @@ def room_test():
     from dungeonrooms import TreasureRoom
     tr = TreasureRoom()
     tr2 = TreasureRoom()
-    rtp = ParserManager.get_parser("room_descriptions.txt", "TreasureRoom")
+    rtp = ParserManager.get_parser(tr, "room_descriptions.txt", "TreasureRoom")
     print(rtp.full_parse())
     tr.decor_dict["chest"].change_location(tr2)
     print("Furnish test: "+str(tr.has_furnishing("chest")))

@@ -159,8 +159,7 @@ class GeneratedRoom(Location):
         # )
 
         parser = parsetemplate.ParserManager.get_parser(
-            self.description_file,
-            self.__class__.__name__,
+            self, self.description_file, self.__class__.__name__,
         )
 
         own_desc = parser.full_parse()
