@@ -308,9 +308,9 @@ class Verbose(DetailAction):
 
     def get_success_string(self, viewer=None):
         if self.actor.ai.verbose:
-            return ("Verbose mode disabled")
+            return "Verbose mode disabled"
         else:
-            return ("Verbose mode enabled")
+            return "Verbose mode enabled"
 
 
 class Diagnose(DetailAction):
@@ -502,8 +502,8 @@ class Unlock(LockingAction):
 
 class WeaponStrike(mixins.HeldTool, ToolAction):
     synonyms = ["strike", "hit", "attack"]
-    time_elapsed = 250
-    cooldown_time = 750
+    time_elapsed = None  # Overwritten in __init__
+    cooldown_time = None  # Overwritten in __init__
     is_hostile = True
     is_physical_attack = True
     stamina_cost = 6
@@ -516,6 +516,8 @@ class WeaponStrike(mixins.HeldTool, ToolAction):
             weapon = None
 
         self.attack_roll = actor.get_attack_roll(weapon)
+        self.time_elapsed = actor.get_attack_onset_time()
+        self.cooldown_time = actor.get_attack_cooldown_time()
 
     def check_geometry(self):
         if not self.actor.can_reach(self.target):

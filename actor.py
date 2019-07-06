@@ -326,6 +326,13 @@ class Person(Actor):
             output += " (unconscious)"
         return output
 
+    def get_attack_onset_time(self):
+        return 200 + randint(0, 100)
+
+    def get_attack_cooldown_time(self):
+        return 200 + randint(0, 100)
+
+
 class AntQueen(Person):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
