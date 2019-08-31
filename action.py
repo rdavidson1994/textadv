@@ -1102,6 +1102,36 @@ class LandmarkTravelRoutine(Routine, ZeroTargetAction):
         return VectorTravel(self.actor, quiet=quiet, vector=vector)
 
 
+class EnterLandmarkRoutine(Routine, ZeroTargetAction):
+    synonyms = ["enter", "landmarkenter"]
+
+    class VerbClass(Verb):
+        match_strings = ["VERB LANDMARK"]
+
+    def __init__(self, *args, landmark, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.landmark = landmark
+
+    def check_geometry(self):
+        valid, reason = super().check_geometry()
+        if not valid:
+            return False, reason
+
+        if isinstance(self.landmark.basis, game_object.PortalVertex):
+            return True, ""
+        else:
+            return False, "That landmark can't be entered."
+
+    def get_local_action(self):
+        if self.actor.can_reach(self.landmark.basis):
+            return Enter(actor, self.landmark.basis)
+        else:
+            return self.start_routine(
+                LandmarkTravelRoutine(self.actor, landmark=self.landmark)
+            )
+
+
+
 if __name__ == "__main__":
     import actor
     import game_object
