@@ -147,7 +147,8 @@ class Town(WorldAgent):
                 name=namemaker.make_name()+"gang",
                 target=self,
                 location=self.location,
-                coordinates=self.location.random_in_circle(self.coordinates, 5),
+                coordinates=self.location.random_in_circle(
+                    self.coordinates, 5),
             )
             print(f"{self.name} spawned {group.name} @ unrest {self.unrest}")
 
@@ -316,7 +317,8 @@ class ExternalNuisance(PopulationAgent):
         self.power -= 0.1
         if random() < 1/10 and not self.target.destroyed:
             new_unrest = self.target.unrest + self.power/2
-            print(f"{self.name} attacked {self.target.get_name()} (unrest {self.target.unrest}->{new_unrest})")
+            print(
+                f"{self.name} attacked {self.target.get_name()} (unrest {self.target.unrest}->{new_unrest})")
             self.target.unrest = new_unrest
             self.power += 4/self.target.unrest
         if self.power <= 0:
@@ -458,7 +460,6 @@ class GiantAntSwarm(ExternalNuisance):
             actors.append(queen)
             self.population.location_functions[queen] = self.boss_location_function
 
-
         for _ in range(number):
             ant = actor.Person(
                 location=None,
@@ -472,7 +473,6 @@ class GiantAntSwarm(ExternalNuisance):
             if queen:
                 queen.ants.append(ant)
         return actors
-
 
 
 class KoboldGroup(ExternalNuisance):
@@ -494,7 +494,7 @@ class KoboldGroup(ExternalNuisance):
             return region.arbitrary_location()
 
     def build_actors(self, number=None):
-        #TODO: Refactor all "number != None" branches into a "make_actor" branch
+        # TODO: Refactor all "number != None" branches into a "make_actor" branch
         actors = []
         if number is None:
             number = len(self.adjectives)
