@@ -96,3 +96,6 @@ class Name:
 
     def __add__(self, other):
         return self.add(other, template="{} {}")
+
+    def __radd__(self, other):
+        return self.add(other, template="{1} {0}")
