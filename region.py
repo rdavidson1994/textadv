@@ -696,7 +696,16 @@ class VillageCenter(location.Location):
             verb = "is struggling to survive"
         else:
             verb = "is on the brink of collapse"
-        return f"The village of {name} {verb} (unrest={unrest})."
+        out = f"The village of {name} {verb} (unrest={unrest:.2f}).\n"
+        worst = self.agent.worst_problem()
+        if worst is not None:
+            from agent import day
+            delay = self.agent.last_attack(worst) / day
+            out += (
+                f"{name}'s greatest hardship is {worst.get_name(viewer)}, "
+                f"who most recently attacked {delay:.2f} days ago."
+            )
+        return out
 
 
 class TownRegion:
