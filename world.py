@@ -14,12 +14,14 @@ from wide import Overworld
 import population
 
 
-def make_player(location, coordinates, landmarks=set(), use_web_output=False):
+def make_player(location, coordinates, landmarks=set(), use_web_output=False, postures=()):
     john = actor.Hero(
         location=location,
         name="john",
         coordinates=coordinates
     )
+    for p in postures:
+        john.learn_posture(p)
     my_parser = john.ai
     my_parser.web_output = use_web_output
     john.view_location()

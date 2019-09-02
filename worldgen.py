@@ -1,3 +1,4 @@
+import posture
 from agent import WorldEvents, Town
 import schedule
 import wide
@@ -42,6 +43,7 @@ if __name__ == "__main__":
 
     dude = make_player(
         location=world_map,
+        postures=(posture.random_posture(),),
         coordinates=world_map.random_point(),
         landmarks=set(town.site.landmark for town in towns),
         use_web_output=False,
