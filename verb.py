@@ -119,7 +119,7 @@ class Verb:
                 if kind == "TARGET":
                     target = self.parser.match_thing_to_name(word)
                 elif kind == "TOOL":
-                    tool = self.parser.match_thing_to_name(word)
+                    tool = self.parser.match_thing_to_name(word, "TARGET")
                 elif kind == "LANDMARK":
                     landmark = self.parser.match_landmark_to_name(word)
                     kwargs["landmark"] = landmark
@@ -134,6 +134,9 @@ class Verb:
                         )
                     else:
                         kwargs["duration"] = dur
+                elif kind == "POSTURE":
+                    posture = self.parser.match_thing_to_name(word, "POSTURE")
+                    kwargs["posture"] = posture
                 elif kind == "DIRECTION":
                     try:
                         direct = direction.full_dict[word]
@@ -182,7 +185,7 @@ class Verb:
                 out_strings.append(gfl(self.action_class.synonyms))
             elif token == "NONSENSE":
                 out_strings.append(r"(?:.*)")
-            elif token in ("TARGET", "TOOL", "DURATION", "LANDMARK"):
+            elif token in ("TARGET", "TOOL", "DURATION", "LANDMARK", "POSTURE"):
                 out_strings.append(r"(.*)")
             elif token == "DIRECTION":
                 group = gfl(direction.full_dict.keys(), capture=True)
@@ -198,12 +201,12 @@ class Verb:
     @staticmethod
     def signature_from_tokens(tokens):
         return [t for t in tokens
-                if t in ("TARGET", "TOOL", "DURATION", "DIRECTION", "LANDMARK")]
+                if t in ("TARGET", "TOOL", "DURATION", "DIRECTION", "LANDMARK", "POSTURE")]
 
     def match(self, actor, input_string):
         match = None
         quality = None
-        for i, (regex, sig) in enumerate(zip(self.regex_list,                                self.signature_list)):
+        for i, (regex, sig) in enumerate(zip(self.regex_list, self.signature_list)):
             possible_match = regex.match(input_string)
             if possible_match:
                 match = possible_match
