@@ -226,8 +226,8 @@ class SquadAI(AI):
         def see_thing(self, thing):
             nearby_allies = self.ai().nearby_allies()
             if len(nearby_allies) >= 3:
-                    self.ai().morale_level = "fight"
-                    self.complete = True
+                self.ai().morale_level = "fight"
+                self.complete = True
 
         def get_local_action(self):
             at_rally = self.ai().at_rally()
