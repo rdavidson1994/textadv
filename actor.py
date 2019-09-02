@@ -1,3 +1,5 @@
+import math
+
 import game_object
 import body
 import parsing
@@ -5,8 +7,9 @@ import ai
 import schedule
 import errors
 from logging import debug
-from random import random, randint, triangular
+from random import random, randint, triangular, choice
 from name_object import Name
+from posture import Stance, Guard, BonusType, Posture
 
 
 class Actor(game_object.Thing):
@@ -96,10 +99,10 @@ class Actor(game_object.Thing):
         pass
 
     def set_timer(self, time, keyword):
-        self.schedule.set_timer(self, time, keyword)
+        return self.schedule.set_timer(self, time, keyword)
 
     def set_callback_timer(self, time, callback):
-        self.schedule.set_timer(self, time, callback=callback)
+        return self.schedule.set_timer(self, time, callback=callback)
 
     def hear_timer(self, keyword):
         pass
@@ -251,6 +254,11 @@ class Person(Actor):
         else:
             return False
 
+    def learn_combat_skills_from(self, other):
+        if isinstance(other, Person):
+            if random() < 0.1*other.combat_skill/self.combat_skill:
+                self.combat_skill += 1
+
     def be_targeted(self, action):
         if action.is_social:
             if self.awake:
@@ -263,21 +271,27 @@ class Person(Actor):
         ):
             name = action.actor.get_identifier(self)
             parry_roll = self.get_parry_roll()
+            self.learn_combat_skills_from(action.actor)
             if parry_roll >= 2 * action.attack_roll:
                 self.ai.display("You easily parry " + name)
-                self.body.take_fatigue(2)
+                self.body.take_fatigue(self.baseline_parry_fatigue())
+                self.easy_parry_effects(action.actor)
                 return False, "Your attack is easily parried."
             elif parry_roll >= 1.3 * action.attack_roll:
-                self.body.take_fatigue(3)
+                self.body.take_fatigue(self.baseline_parry_fatigue()*1.5)
                 self.ai.display("You parry " + name)
                 return False, "Your attack is parried."
             elif parry_roll >= action.attack_roll:
-                self.body.take_fatigue(4)
+                self.body.take_fatigue(self.baseline_parry_fatigue()*2)
                 self.ai.display("You barely parry " + name)
+                action.actor.near_hit_effects(self)
                 return False, "Your attack is barely parried."
             else:
                 self.ai.display("You fail to parry " + name)
         return super().be_targeted(action)
+
+    def baseline_parry_fatigue(self):
+        return 2
 
     def find_portal_facing_direction(self, direction):
         for portal in self.location.things_with_trait("portal"):
@@ -330,7 +344,148 @@ class Person(Actor):
         return 200 + randint(0, 100)
 
     def get_attack_cooldown_time(self):
-        return 200 + randint(0, 100)
+        return 700 + randint(0, 100)
+
+    def get_melee_damage(self, weapon):
+        # weapon may equal self for unarmed attacks
+        return randint(1, 15)
+
+    def easy_parry_effects(self, actor):
+        pass
+
+    def near_hit_effects(self, actor):
+        pass
+
+
+class Humanoid(Person):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.stance = Stance.get_default()
+        self.guard = Guard.get_default()
+        self.temporary_postures = {}
+        self.postures_known = {self.stance, self.guard}
+
+    def teach_posture(self, other: "Humanoid"):
+        posture = choice([self.guard, self.stance])
+        other.learn_posture(posture)
+
+    def learn_posture(self, posture: Posture):
+        if posture not in self.postures_known:
+            self.ai.display(f"You learn {posture.name.get_text(self)}")
+            self.postures_known.add(posture)
+
+    def adopt_posture(self, posture):
+        assert posture in self.postures_known
+        if isinstance(posture, Stance):
+            self.stance = posture
+        elif isinstance(posture, Guard):
+            self.guard = posture
+        else:
+            assert False
+
+    def learn_combat_skills_from(self, other):
+        super().learn_combat_skills_from(other)
+        if isinstance(other, Humanoid):
+            if random() < 0.1:
+                other.teach_posture(self)
+
+    def posture_value(self, bonus_type: BonusType):
+        factor = (
+            self.stance.get_multiplier(bonus_type)
+            * self.guard.get_multiplier(bonus_type)
+        )
+        for p in self.temporary_postures:
+            factor *= p.get_multiplier(bonus_type)
+        return factor
+
+    def get_attack_cooldown_time(self):
+        return math.floor(
+            super().get_attack_cooldown_time()
+            / self.posture_value(BonusType.attack_cooldown_divisor)
+        )
+
+    def get_attack_onset_time(self):
+        return math.floor(
+            super().get_attack_onset_time()
+            / self.posture_value(BonusType.attack_onset_divisor)
+        )
+
+    def get_attack_roll(self, weapon=None, min_=False):
+        return math.floor(
+            super().get_attack_roll(weapon, min_)
+            * self.posture_value(BonusType.attack_skill_multiplier)
+        )
+
+    def get_parry_roll(self, min_=False):
+        return math.floor(
+            super().get_parry_roll(min_)
+            * self.posture_value(BonusType.parry_skill_multiplier)
+        )
+
+    def baseline_parry_fatigue(self):
+        return math.floor(
+            super().baseline_parry_fatigue()
+            / self.posture_value(BonusType.parry_fatigue_divisor)
+        )
+
+    def get_melee_damage(self, weapon):
+        return math.floor(
+            super().get_melee_damage(weapon)
+            * self.posture_value(BonusType.attack_damage_multiplier)
+        )
+
+    def get_postures_from_name(self, name):
+        return [x for x in self.postures_known if x.name.matches(name)]
+
+    def apply_temporary_posture(self, posture, duration):
+        event = self.temporary_postures.pop(posture, None)
+        if event:
+            self.schedule.cancel_event(event)
+        timer = self.set_callback_timer(
+            duration,
+            lambda: self.temporary_postures.pop(posture, None)
+        )
+        self.temporary_postures[posture] = timer
+
+    def status_delivered_report(self, posture, actor, case):
+        cases = {
+            "easy_parry": (
+                posture.easy_parry_effect,
+                posture.easy_parry_duration,
+            ),
+            "near_hit": (
+                posture.near_hit_effect,
+                posture.near_hit_duration
+            )
+        }
+        (effect, duration) = cases[case]
+        return (f"{actor.get_name(self)} receives:\n"
+                f"{effect.get_summary(self)}\n"
+                f"for the next {duration / 1000} seconds")
+
+    def easy_parry_effects(self, actor):
+        if isinstance(actor, Humanoid):
+            for p in self.guard, self.stance:
+                if p.easy_parry_effect:
+                    actor.apply_temporary_posture(
+                        p.easy_parry_effect,
+                        p.easy_parry_duration
+                    )
+                    report = self.status_delivered_report(p, actor, "easy_parry")
+                    actor.receive_text_message(report)
+                    self.receive_text_message(report)
+
+    def near_hit_effects(self, actor):
+        if isinstance(actor, Humanoid):
+            for p in self.guard, self.stance:
+                if p.near_hit_effect:
+                    actor.apply_temporary_posture(
+                        p.near_hit_effect,
+                        p.near_hit_duration
+                    )
+                    report = self.status_delivered_report(p, actor, "near_hit")
+                    actor.receive_text_message(report)
+                    self.receive_text_message(report)
 
 
 class AntQueen(Person):
@@ -344,10 +499,10 @@ class AntQueen(Person):
         self.combat_skill = 60
 
     def die(self, damage_amount=0, damage_type=None):
-        super().die(damage_amount, damage_type)
         for ant in self.ants:
             if ant.alive:
                 ant.die()
+        super().die(damage_amount, damage_type)
 
 
 class WaitingActor(Person):
@@ -368,16 +523,13 @@ class SquadActor(Person):
         self.ai = ai.SquadAI(self)
 
 
-class Hero(Person):
+class Hero(Humanoid):
     def __init__(self, *args, **kwargs):
-        Person.__init__(self, *args, **kwargs)
+        Humanoid.__init__(self, *args, **kwargs)
         self.traits.add("hero")
         self.ai = parsing.Parser(self)
         self.visited_locations = set()
         self.combat_skill = 100
-
-    def get_article(self, viewer=None, definite=False):
-        return " "
 
     def get_identifier(self, viewer=None):
         return self.get_name(viewer)
@@ -392,8 +544,9 @@ class Hero(Person):
     def receive_action_feedback(self, success, string):
         self.ai.display(string)
 
-    def change_location(self, new_location, coordinates=None,
-                        keep_arranged=False):
+    def change_location(
+        self, new_location, coordinates=None, keep_arranged=False
+    ):
         super().change_location(new_location, coordinates)
 
     def is_hero(self):
