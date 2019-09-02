@@ -14,6 +14,7 @@ import errors
 import game_object
 import namemaker
 import sites
+import posture
 from field import NuisanceEncounters
 from name_object import Name
 from population import Population
@@ -110,8 +111,36 @@ class Town(WorldAgent):
         self.site.add_morph(sites.TownBuildingMorph(building.WeaponShop))
         self.site.add_morph(sites.TownBuildingMorph(building.Inn))
         self.traits.add("town")
+        self.enemy_priority = {}
+        self.last_attacks = {}
+
+    def suffer_attack(self, unrest, source):
+        self.unrest += unrest
+        if source in self.enemy_priority:
+            self.enemy_priority[source] += unrest
+        else:
+            self.enemy_priority[source] = unrest
+        self.last_attacks[source] = self.schedule.current_time
+
+    def worst_problem(self):
+        try:
+            return max(self.enemy_priority, key=self.enemy_priority.get)
+        except ValueError:
+            return None
+
+    def priority(self, agent):
+        out = self.enemy_priority.get(agent)
+        if out is None:
+            out = 0
+        return out
+
+    def last_attack(self, agent):
+        last = self.last_attacks.get(agent)
+        return self.schedule.current_time - last
 
     def take_turn(self):
+        for agent in self.enemy_priority:
+            self.enemy_priority[agent] *= 0.9**(self.update_period / day)
         if self.destroyed:
             return
 
@@ -150,7 +179,7 @@ class Town(WorldAgent):
                 coordinates=self.location.random_in_circle(
                     self.coordinates, 5),
             )
-            print(f"{self.name} spawned {group.name} @ unrest {self.unrest}")
+            print(f"{self.name} spawned {group.name} at unrest {self.unrest:.2f}")
 
         if self.unrest > 60 + random()*40:
             print(f"{self.name} crumbled to ruin amid starvation and rioting.")
@@ -318,7 +347,10 @@ class ExternalNuisance(PopulationAgent):
         if random() < 1/10 and not self.target.destroyed:
             new_unrest = self.target.unrest + self.power/2
             print(
-                f"{self.name} attacked {self.target.get_name()} (unrest {self.target.unrest}->{new_unrest})")
+                f"{self.name} attacked {self.target.get_name()} "
+                f"(unrest {self.target.unrest:.2f}->{new_unrest:.2f})"
+            )
+            self.target.suffer_attack(self.power/2, self)
             self.target.unrest = new_unrest
             self.power += 4/self.target.unrest
         if self.power <= 0:
@@ -372,10 +404,19 @@ class BanditGroup(ExternalNuisance):
             title = "bandit maceman"
         given_name = namemaker.make_name()
         name_and_title = given_name.add(title, template="{}, {}")
-        bandit = actor.SquadActor(
+        bandit = actor.Humanoid(
             location=None,
             name=name_and_title
         )
+        bandit.ai = ai.SquadAI(bandit)
+        # TODO: Replace this with selection from a world-level posture list
+        stance = posture.random_posture(posture.Stance)
+        guard = posture.random_posture(posture.Guard)
+        for p in (stance, guard):
+            bandit.learn_posture(p)
+            bandit.adopt_posture(p)
+
+
         weapon = game_object.Item(
             location=bandit,
             name=Name(weapon_kind)
@@ -398,7 +439,7 @@ class GhoulHorde(ExternalNuisance):
 
     def build_actors(self, number=None):
         adjectives = [
-            "peeling", "thin", "hairy", "spotted", "bloated", "sho  rt",
+            "peeling", "thin", "hairy", "spotted", "bloated", "short",
         ]
         if number is None:
             number = len(adjectives)
@@ -500,10 +541,11 @@ class KoboldGroup(ExternalNuisance):
             number = len(self.adjectives)
             shuffle(self.adjectives)
         for adjective in self.adjectives[:number]:
-            kobold = actor.SquadActor(
+            kobold = actor.Humanoid(
                 location=None,
                 name=Name(adjective) + "kobold"
             )
+            kobold.ai = ai.SquadAI(kobold)
             kobold.traits.add("kobold")
             actors.append(kobold)
 
