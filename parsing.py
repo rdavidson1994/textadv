@@ -2,6 +2,7 @@ import errors
 import location
 import menu_wrap
 import phrase
+import actor
 import string
 import re
 import json
@@ -158,12 +159,18 @@ class Parser(AI):
         output = output.replace(" the ", " ")
         return output
 
+    def match_posture_to_name(self, name):
+        # Maybe do this?
+        raise NotImplementedError
+
     def match_things_to_names(self, names):
         return [self.match_thing_to_name(name) for name in names]
 
     def match_thing_to_name(self, name, kind="TARGET"):
         if kind == "TARGET" or kind == "LANDMARK":
             lst = self.actor.get_targets_from_name(name, kind)
+        elif isinstance(self.actor, actor.Humanoid) and kind == "POSTURE":
+            lst = self.actor.get_postures_from_name(name)
         else:
             raise Exception
         while len(lst) > 1:
@@ -176,6 +183,8 @@ class Parser(AI):
                     self.display("There is no {} here".format(name))
                 elif kind == "LANDMARK":
                     self.display("You don't know any place called "+name+".")
+                elif kind == "POSTURE":
+                    self.display("You don't know a posture called "+name+".")
             raise errors.NoMatchingObject
 
     def match_landmark_to_name(self, name):
