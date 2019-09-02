@@ -532,8 +532,52 @@ class WeaponStrike(mixins.HeldTool, ToolAction):
         except AttributeError:
             damage_type = "blunt"
             damage_mult = 1
-        amt = randint(0, 15) * damage_mult
+        amt = self.actor.get_melee_damage(self.tool) * damage_mult
         self.target.take_damage(amt, damage_type)
+
+
+class AssumePosture(ZeroTargetAction):
+    priority = 20
+    time_elapsed = 100
+    cooldown_time = 50
+    synonyms = ["assume", "adopt"]
+
+    class VerbClass(Verb):
+        match_strings = ["VERB POSTURE"]
+
+    def __init__(self, *args, posture, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.posture = posture
+
+    def check_geometry(self):
+        from actor import Humanoid
+        if isinstance(self.actor, Humanoid):
+            if self.posture in self.actor.postures_known:
+                return True, ""
+            return False, "You don't know that posture."
+        return False, "You can't use stances or grips since you are not humanoid"
+
+    def affect_game(self):
+        self.actor.adopt_posture(self.posture)
+
+    def get_success_string(self, viewer=None):
+        s = self.possible_s(viewer)
+        name = self.actor.get_name(viewer)
+        posture_name = self.posture.name.get_text(viewer)
+        return f"{name} assume{s} the {posture_name}"
+
+
+class PostureReport(DetailAction):
+    synonyms = ["stances", "guards", "postures"]
+
+    def get_success_string(self, viewer=None):
+        from actor import Humanoid
+        if isinstance(self.actor, Humanoid) and len(self.actor.postures_known) != 0:
+            return "\n".join(
+                posture.get_summary(self.actor)
+                for posture in self.actor.postures_known
+            )
+        return "You don't know any postures"
 
 
 class VectorTravel(ZeroTargetAction):
@@ -639,7 +683,7 @@ class Sell(Transaction):
 class RentInnRoom(SingleTargetAction):
     is_social = True
     synonyms = ["rent", "rent room"]
-    time_elapsed = 60000
+    time_elapsed = 28800000
 
     class VerbClass(Verb):
         match_strings = ["VERB room from TARGET", "VERB from TARGET"]
@@ -925,7 +969,6 @@ class ExitRoutine(SingleActionRoutine, ZeroTargetAction):
                 return Enter(self.actor, exits[0])
             else:
                 return FailAction(self.actor, "There are multiple exits.")
-
 
 
 class DurationWaitRoutine(Routine, ZeroTargetAction):
