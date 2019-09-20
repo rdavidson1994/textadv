@@ -13,14 +13,11 @@ import dungeonrooms
 import errors
 import game_object
 import namemaker
-import population
-import shopkeeper
 import sites
 import posture
 from field import NuisanceEncounters
 from name_object import Name
 from population import Population
-from region import TownRegion
 
 day = 1000*60*60*24
 
@@ -111,9 +108,6 @@ class Town(WorldAgent):
             landmark_name=self.name_object+"village",
             agent=self,
         )
-        for factory in (building.WeaponShop, building.Inn):
-            pop = population.ShopPopulation(shopkeeper.Person(), )
-            self.site.add_population()
         self.site.add_morph(sites.TownBuildingMorph(building.WeaponShop))
         self.site.add_morph(sites.TownBuildingMorph(building.Inn))
         self.traits.add("town")
@@ -189,12 +183,8 @@ class Town(WorldAgent):
 
         if self.unrest > 60 + random()*40:
             print(f"{self.name} crumbled to ruin amid starvation and rioting.")
-            self.teardown()
+            self.destroyed = True
             return
-
-    def teardown(self):
-        self.destroyed = True
-
 
 
 class SubordinatePopulation(Population):
@@ -391,7 +381,7 @@ class BanditGroup(ExternalNuisance):
         return actors
 
     def encounter_quantity(self):
-        return max(2, min(5, math.floor(self.power)))
+        return max(1, min(5, math.floor(self.power)))
 
     def populate_encounter(self, encounter_pocket):
         number_of_bandits = self.encounter_quantity()
