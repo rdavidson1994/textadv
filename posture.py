@@ -35,16 +35,21 @@ bonus_representation = {
 
 
 class Posture:
-    def __init__(self, multipliers: Dict[BonusType, float], name: Name):
+    def __init__(self, multipliers: Dict[BonusType, float], name: Name, is_default: bool = False):
         self.multipliers = dict(multipliers)
         self.name = name
+        self.is_default = False
         self.easy_parry_effect = None
         self.easy_parry_duration = 0
         self.near_hit_effect = None
         self.near_hit_duration = 0
+        self.is_default = is_default
 
     def get_name(self, viewer=None):
         return self.name.get_text(viewer)
+
+    def has_name(self, name, viewer=None):
+        return self.name.matches(name)
 
     def get_summary_lines(self, viewer=None):
         out_lines = []
@@ -76,7 +81,12 @@ class Posture:
         return out_lines
 
     def get_summary(self, viewer=None):
-        out = [self.get_name(viewer)+":"]
+        from actor import Humanoid
+        prefix = ""
+        if isinstance(viewer, Humanoid):
+            if viewer.stance == self or viewer.guard == self:
+                prefix = "* "
+        out = [prefix + self.get_name(viewer)]
         out.extend(self.get_summary_lines(viewer))
         return "\n".join(out)
 
@@ -96,13 +106,12 @@ class Posture:
 class Stance(Posture):
     @classmethod
     def get_default(cls):
-        return cls({}, Name("neutral stance"))
-
+        return cls({}, Name("neutral stance"), is_default=True)
 
 class Guard(Posture):
     @classmethod
     def get_default(cls):
-        return cls({}, Name("neutral guard"))
+        return cls({}, Name("neutral guard"), is_default=True)
 
 
 def random_debuff(derived_name):
