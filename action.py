@@ -572,11 +572,21 @@ class PostureReport(DetailAction):
 
     def get_success_string(self, viewer=None):
         from actor import Humanoid
+        from posture import Stance, Guard
         if isinstance(self.actor, Humanoid) and len(self.actor.postures_known) != 0:
-            return "\n".join(
+            out = ["Stances:"]
+            out.extend(
                 posture.get_summary(self.actor)
                 for posture in self.actor.postures_known
+                if isinstance(posture, Stance)
             )
+            out.append("\nGuards:")
+            out.extend(
+                posture.get_summary(self.actor)
+                for posture in self.actor.postures_known
+                if isinstance(posture, Guard)
+            )
+            return "\n".join(out)
         return "You don't know any postures"
 
 
