@@ -1060,7 +1060,7 @@ class LeaveDungeonRoutine(Routine, ZeroTargetAction):
         if self.actor.location.has_trait("wide"):
             debug("ACTOR FLED TO WILDERNESS")
             return WildernessFlee(self.actor)
-        game_exits = self.actor.location.things_with_name("slope")
+        game_exits = self.actor.location.things_with_name("exit")
         if game_exits:
             exit = next(iter(game_exits))
             return Enter(self.actor, exit)
