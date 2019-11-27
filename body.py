@@ -84,13 +84,13 @@ class Body:
     def get_damage_report(self, verbose=False, alpha=0.2, viewer=None):
         you = self.owner.get_identifier(viewer)
         out = ""
+        if viewer == self.owner:
+            have = "have"
+            are = "are"
+        else:
+            have = "has"
+            are = "is"
         if self.damage > 0 or verbose:
-            if viewer == self.owner:
-                have = "have"
-                are = "are"
-            else:
-                have = "has"
-                are = "is"
 
             left_bound = self.inv_ko_cdf(alpha / 2)
             right_bound = self.inv_ko_cdf(1 - alpha / 2)

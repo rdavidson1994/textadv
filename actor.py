@@ -249,7 +249,7 @@ class Person(Actor):
     def can_reach(self, target):
         if self.has_thing(target):
             return True
-        elif self.location.has_nested_thing(target) or self.has_thing(target):
+        elif self.location.has_nested_thing(target) or self.has_nested_thing(target):
             return self.location.line_of_sight(self, target)
         else:
             return False
@@ -307,10 +307,10 @@ class Person(Actor):
             candidates = self.known_landmarks
         else:
             raise Exception  # Need to specify a valid kind
-        if name in ("self", "myself", "yourself"):
+        if name in ("self", "me", "myself", "yourself"):
             return [x for x in candidates if x == self]
         else:
-            return [x for x in candidates if x.has_name(name)]
+            return [x for x in candidates if x.has_name(name, viewer=self)]
 
     def get_targets_from_trait(self, trait):
         return [x for x in self.get_valid_targets() if x.has_trait(trait)]

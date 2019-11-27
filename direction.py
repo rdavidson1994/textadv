@@ -49,3 +49,10 @@ for i in letter_dict.keys():
     full_dict[i] = letter_dict[i]
 for i in name_dict.keys():
     full_dict[i] = name_dict[i]
+
+
+def from_string(string):
+    try:
+        return full_dict[string]
+    except KeyError:
+        return None

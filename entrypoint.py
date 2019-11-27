@@ -1,6 +1,6 @@
 import argparse
 import pickle
-from world import Static
+from world import Static, Random
 from os import path
 import json
 
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     if args.save:
         world = save_manager.load(args.save)
     else:
-        world = Static(args.web, save_manager)
+        world = Random(args.web, save_manager)
 
     world.run_game()
     save_manager = SaveManager(save_directory)

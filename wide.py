@@ -82,7 +82,7 @@ class Overworld(location.Location):
         assert actor.has_location(self)
         pocket = encounter.EncounterPocket(
             sched=self.schedule,
-            description="You are in a pocket dimension for a random encounter"
+            description="You have been ambushed in a small, grassy clearing."
         )
         exit_direction = direction.random(up_and_down=False)
         encounter.PocketExit(
@@ -157,6 +157,18 @@ class Overworld(location.Location):
         # By default, we map each 1.0x1.0 chunk of land to two characters
         if viewer is None:
             return "No map is available"
+
+        try:
+            #TODO: Extract this escaping up to the player AI at least
+            web_mode = viewer.ai.web_output
+        except AttributeError:
+            web_mode = False
+
+        if web_mode:
+            space = "&nbsp"
+        else:
+            space = " "
+
         count_x = int(self.width / stride_x)
         count_y = int(self.height / stride_y)
 
@@ -170,7 +182,7 @@ class Overworld(location.Location):
             elif on_horizontal:
                 return "--"
             else:
-                return "  "
+                return space*2
 
         def set_grid(grid, coordinates, value):
             x_index, y_index = indexes_from_coords(coordinates)
@@ -201,7 +213,7 @@ class Overworld(location.Location):
                 set_grid(full_grid, landmark.coordinates, symbol)
 
         if viewer.has_location(self) and viewer.coordinates is not None:
-            set_grid(full_grid, viewer.coordinates, "@ ")
+            set_grid(full_grid, viewer.coordinates, "@"+space)
             legend_entries.append("@: You")
 
         if full_size:

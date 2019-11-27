@@ -365,6 +365,7 @@ class ExternalNuisance(PopulationAgent):
         encounter_pocket = other.location.create_pocket(other)
         self.populate_encounter(encounter_pocket)
         other.change_location(encounter_pocket)
+        other.view_location()
 
 
 class BanditGroup(ExternalNuisance):

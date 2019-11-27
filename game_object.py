@@ -34,9 +34,9 @@ class Landmark:
         else:
             return self.name.get_text(viewer=viewer)
 
-    def has_name(self, text):
+    def has_name(self, text, viewer=None):
         if self.basis:
-            return self.basis.has_name(text) or self.name.matches(text)
+            return self.basis.has_name(text, viewer=viewer) or self.name.matches(text)
         else:
             return self.name.matches(text)
 
@@ -152,8 +152,10 @@ class Thing:
         else:
             return False
 
-    def has_name(self, name):
-        if self.name_object:
+    def has_name(self, name, viewer=None):
+        if self.get_name(viewer).lower() == name.lower():
+            return True
+        elif self.name_object:
             return self.name_object.matches(name)
         else:
             return False
@@ -161,8 +163,8 @@ class Thing:
     def things_with_trait(self, trait):
         return {thing for thing in self.things if thing.has_trait(trait)}
 
-    def things_with_name(self, name):
-        return {thing for thing in self.things if thing.has_name(name)}
+    def things_with_name(self, name, viewer=None):
+        return {thing for thing in self.things if thing.has_name(name, viewer=viewer)}
 
     def has_location(self, location):
         if location == self.location:
@@ -236,13 +238,13 @@ class Thing:
         """PUBLIC: Return a name appropriate to the viewer
         arg viewer: The actor who is looking at this object.
         return: A name for this object appropriate to the viewer"""
-        if viewer is None:
-            web = False
-        else:
+        if viewer is not None:
             try:
                 web = viewer.ai.web_output
             except AttributeError:
                 web = False
+        else:
+            web = False
         out = self.name
         if web:
             return self.menu_wrap(out)
@@ -365,8 +367,15 @@ class PortalVertex(Thing):
     def get_coordinates(self, viewing_location):
         return self.coordinates
 
-    def has_name(self, name):
-        sup = super().has_name(name)
+    def has_name(self, name, viewer=None):
+        name_dir_pair = name.split(" facing ")
+        if len(name_dir_pair) == 2:
+            direction_ = direction.from_string(name_dir_pair[1])
+            if self.direction.opposite != direction_:
+                return False
+            if direction_ is not None:
+                name = name_dir_pair[0]
+        sup = super().has_name(name, viewer=viewer)
         if sup:
             return True
         elif name == "exit" and len(self.location.things_with_trait("portal")) == 1:
@@ -374,11 +383,17 @@ class PortalVertex(Thing):
         else:
             return False
 
+    def get_suggested_verbs(self):
+        return "enter",
 
     def get_name(self, viewer=None):
         """Returns a name appropriate to the viewing actor.
         """
         if viewer:
+            try:
+                web_output = viewer.ai.web_output
+            except AttributeError:
+                web_output = False
             if (
                 viewer.has_location(self.location)
                 and self.coordinates is not None
@@ -386,10 +401,16 @@ class PortalVertex(Thing):
             ):
                 distance = self.location.distance(self, viewer)
                 bearing = self.location.compass_direction(viewer, self).upper()
-                return f"{self.name}, {distance:.1f} units {bearing}"
+                out_string = f"{self.name}, {distance:.1f} units {bearing}"
+                suggested_noun = self.name
             else:
-                direction = self.get_relative_direction(viewer)
-                return self.name + " facing " + str(direction)
+                direction_ = self.get_relative_direction(viewer)
+                out_string = f"{self.name} facing {str(direction_)}"
+                suggested_noun = out_string
+            if web_output:
+                return menu_wrap(suggested_noun, self.get_suggested_verbs(), display_noun=out_string)
+            else:
+                return out_string
         else:
             return self.name
 

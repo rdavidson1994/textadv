@@ -327,6 +327,35 @@ class Diagnose(DetailAction):
         return self.actor.get_health_report(viewer=viewer)
 
 
+class EquipWarning(DetailAction, SingleTargetAction):
+    """A stand in, so people don't get confused about equipping stuff"""
+    synonyms = ["equip", "wield"]
+
+    def get_success_string(self, viewer=None):
+        return (
+            "You don't need to equip or wield weapons yet. \n"
+            "You can type \"hit [target] with [weapon]\" to use a specific weapon,\n"
+            "or just \"hit [target]\" to use the \"best\" weapon you have."
+        )
+
+
+class TutorialAction(DetailAction):
+    synonyms = ["help", "\\?"]
+
+    def get_success_string(self, viewer=None):
+        return "\n".join([
+            "Here are some example commands to get you started:",
+            '"take [something]", "drop [something]", and "inventory" do what you\'d expect.',
+            '"n" or "north": Travel north on the overland map, or in a dungeon.',
+            '"enter [some place]": Enter a site from the overland map.',
+            '"go to [some place]": Fast travel to somewhere on the overland map.',
+            '"health" or "h": View a report of your current health, stamina, and mana.',
+            '"map" or "m": Display the full overland or dungeon map.',
+            '"hit [target] with [weapon]": attack with a specific weapon.',
+            '"hit [target]": attack with the "best" weapon in your inventory.',
+        ])
+
+
 class SpellReport(DetailAction):
     synonyms = ["spells", "magic", "spells"]
 
@@ -443,7 +472,7 @@ class Drop(mixins.HeldTarget, SingleTargetAction):
 class Enter(mixins.Motion, SingleTargetAction):
     """For when the player says 'Enter the wooden door'.
     the door you enter is the one he/she tells you to."""
-    synonyms = ["enter"]
+    synonyms = ["enter", "exit"]
     target_traits = ["portal"]
 
     def __init__(self, actor, *target_list):
@@ -501,7 +530,7 @@ class Unlock(LockingAction):
 
 
 class WeaponStrike(mixins.HeldTool, ToolAction):
-    synonyms = ["strike", "hit", "attack"]
+    synonyms = ["strike", "hit", "attack", "kill", "fight"]
     time_elapsed = None  # Overwritten in __init__
     cooldown_time = None  # Overwritten in __init__
     is_hostile = True
@@ -924,7 +953,7 @@ class ReadRoutine(SingleActionRoutine, SingleTargetAction):
 
 
 class DefaultStrikeRoutine(SingleActionRoutine, SingleTargetAction):
-    synonyms = ["strike", "hit", "attack"]
+    synonyms = WeaponStrike.synonyms
     priority = 15
     empty_reason = "No weapon strike"
 
@@ -952,6 +981,19 @@ class TakeAllRoutine(ActionListRoutine, ZeroTargetAction):
                 for item in self.actor.get_valid_targets()]
 
 
+class LootRoutine(ActionListRoutine, SingleTargetAction):
+    synonyms = ["loot"]
+    target_traits = ["container"]
+    def build_action_list(self):
+        out = [
+            Take(self.actor, item)
+            for item in self.actor.get_valid_targets()
+            if item.has_location(self.target)
+        ]
+        if len(out) == 0:
+            self.empty_reason = f"There is nothing to take in {self.target.get_identifier(self.actor)}"
+
+
 class RestRoutine(Routine, ZeroTargetAction):
     synonyms = ["rest"]
     empty_reason = "You are already rested."
@@ -974,7 +1016,7 @@ class ExitRoutine(SingleActionRoutine, ZeroTargetAction):
         elif len(portals) == 1:
             return Enter(self.actor, portals[0])
         else:
-            exits = [p for p in portals if p.has_name("exit")]
+            exits = [p for p in portals if p.has_name("exit", viewer=self.actor)]
             if len(exits) == 1:
                 return Enter(self.actor, exits[0])
             else:
@@ -1060,7 +1102,7 @@ class LeaveDungeonRoutine(Routine, ZeroTargetAction):
         if self.actor.location.has_trait("wide"):
             debug("ACTOR FLED TO WILDERNESS")
             return WildernessFlee(self.actor)
-        game_exits = self.actor.location.things_with_name("exit")
+        game_exits = self.actor.location.things_with_name("exit", viewer=self.actor)
         if game_exits:
             exit = next(iter(game_exits))
             return Enter(self.actor, exit)
