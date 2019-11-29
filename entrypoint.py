@@ -1,5 +1,5 @@
 import argparse
-import pickle
+import dill as pickle
 from world import Static, Random
 from os import path
 import json
