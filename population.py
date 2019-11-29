@@ -96,7 +96,7 @@ class TestPopulation(unittest.TestCase):
         from sites import Cave
         import wide
         from schedule import Schedule
-        world = wide.Location(sched=Schedule(), name="world")
+        world = wide.Overworld(sched=Schedule(), name="world")
         cave = Cave.at_point(
             world,
             coordinates=(15, 15),

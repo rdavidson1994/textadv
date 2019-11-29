@@ -159,8 +159,7 @@ class GeneratedRoom(Location):
         # )
 
         parser = parsetemplate.ParserManager.get_parser(
-            self.description_file,
-            self.__class__.__name__,
+            self, self.description_file, self.__class__.__name__,
         )
 
         own_desc = parser.full_parse()
@@ -437,3 +436,50 @@ class Temple(GeneratedRoom):
     map_letter = "Ch"
     preference_list = [DesiredNeighbor(Crypt), DesiredNeighbor(TombSanctum)]
     basic_things = ["pews", "windows"]
+
+
+class HiveEntrance(CaveEntrance):
+    pass
+
+
+class HiveFiller(CaveFiller):
+    def get_description(self, viewer=None):
+        exit_number = len(self.map_node.connected_nodes)
+        if exit_number <= 1:
+            descriptor = "dead end"
+        elif exit_number == 2:
+            descriptor = "tunnel"
+        else:
+            descriptor = "branching tunnel"
+        return f"You are in a {descriptor} dug out by a giant insect"
+
+
+class EggChamber(GeneratedRoom):
+    map_letter = "Eg"
+    basic_items = ["eggs"]
+    preference_list = [AvoidEntrance()]
+
+
+class QueenApartment(GeneratedRoom):
+    map_letter = "Qu"
+    preference_list = [AvoidEntrance(), DesiredNeighbor(EggChamber)]
+
+
+class InsectNest(GeneratedRoom):
+    map_letter = "Ne"
+    preference_list = [DesiredNeighbor(QueenApartment)]
+
+
+class InsectFoodStorage(GeneratedRoom):
+    map_letter = "Fo"
+    preference_list = [DesiredNeighbor(QueenApartment), DesiredNeighbor(InsectNest)]
+
+
+class InsectTreasureRoom(GeneratedRoom):
+    map_letter = "Tr"
+    preference_list = [DesiredNeighbor(QueenApartment)]
+
+    def generate_items(self):
+        d = self.decor_dict
+        d["treasure"] = Item(location=self, name="treasure")
+        d["treasure"].price = 500

@@ -2,6 +2,7 @@ import errors
 import location
 import menu_wrap
 import phrase
+import actor
 import string
 import re
 import json
@@ -129,9 +130,14 @@ class Parser(AI):
             if not action.quiet:
                 self.display(text)
             my_action = self.get_current_action()
+            if my_action:
+                previously_dismissed = self.last_interrupt_request == my_action
+            else:
+                previously_dismissed = False
+            acting = self.routine or my_action
             conditions = (
-                my_action is not None,
-                self.last_interrupt_request != my_action,
+                acting,
+                not previously_dismissed,
                 text != "SILENCE",
                 not self.taking_hostile_action(),
             )
@@ -153,12 +159,18 @@ class Parser(AI):
         output = output.replace(" the ", " ")
         return output
 
+    def match_posture_to_name(self, name):
+        # Maybe do this?
+        raise NotImplementedError
+
     def match_things_to_names(self, names):
         return [self.match_thing_to_name(name) for name in names]
 
     def match_thing_to_name(self, name, kind="TARGET"):
         if kind == "TARGET" or kind == "LANDMARK":
             lst = self.actor.get_targets_from_name(name, kind)
+        elif isinstance(self.actor, actor.Humanoid) and kind == "POSTURE":
+            lst = self.actor.get_postures_from_name(name)
         else:
             raise Exception
         while len(lst) > 1:
@@ -171,6 +183,8 @@ class Parser(AI):
                     self.display("There is no {} here".format(name))
                 elif kind == "LANDMARK":
                     self.display("You don't know any place called "+name+".")
+                elif kind == "POSTURE":
+                    self.display("You don't know a posture called "+name+".")
             raise errors.NoMatchingObject
 
     def match_landmark_to_name(self, name):
@@ -180,6 +194,8 @@ class Parser(AI):
         from action import NullAction
         failure_string = failed_action.is_valid()[1]
         self.display(failure_string)
+        if self.routine:
+            self.routine = None
         return NullAction(self.actor)
 
     def execute_user_input(self):

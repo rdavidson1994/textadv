@@ -1,19 +1,16 @@
-import location
 import region
-import random
 import game_object
-import building
 import actor
 import ai
 import body
-import errors
 from name_object import Name
 from dungeonrooms import (
     TreasureRoom, Barracks, Kitchen, MeatChamber, MessHall, Prison, Apothecary,
     BossQuarters, KoboldCaveEntrance, BanditBarracks, BanditMess, BanditKitchen,
 )
 from abc import ABC, abstractmethod
-from typing import Type
+
+from region import TownRegion
 
 
 class Site:
@@ -58,14 +55,13 @@ class Site:
     ):
         if "name" not in kwargs:
             kwargs["name_pair"] = (
-                Name("entrance to")+landmark_name,
+                landmark_name,
                 Name("exit")
             )
         portal = portal_type.free_portal(
             location, direction, coordinates, **kwargs
         )
         schedule = location.schedule
-        #TODO: Fix this to work with the "agent" argument
         output_site = cls(schedule, portal.target, **kwargs)
         if landmark_name:
             output_site.landmark = portal.source.create_landmark(landmark_name)
@@ -103,34 +99,6 @@ class Morph(ABC):
         pass
 
 
-class TownRegion:
-    # TODO: Put this someplace more appropriate
-    def __init__(self, entrance_portal, sched):
-        self.schedule = sched
-        self.main_location = location.Location(
-            name="town",
-            description="You are in a very placeholder-like town"
-        )
-        self.locations = [self.main_location]
-        entrance_portal.change_location(self.main_location)
-        # building.WeaponShop(self.main_location, sched=self.schedule)
-
-    def arbitrary_location(self):
-        return self.main_location
-
-    def add_room(self, room):
-        self.locations.append(room)
-
-    def room_with_type(self, room_type):
-        candidates = [
-            loc for loc in self.locations if isinstance(loc, room_type)
-        ]
-        if candidates:
-            return random.choice(candidates)
-        else:
-            raise errors.MissingNode
-
-
 class TownSite(Site):
     # This is a placeholder until two goals are met:
     # 1. Region code is abstracted enough to accommodate towns
@@ -144,14 +112,9 @@ class TownSite(Site):
         return False
 
     def construct_base_region(self):
-        self.region = TownRegion(self.entrance_portal, self.schedule)
-
-    # @classmethod
-    # def at_point(cls, location, direction, coordinates=None,
-    #              portal_type=game_object.PortalEdge, landmark_name=None,
-    #              **kwargs):
-    #     assert "agent" in kwargs
-    #     # TODO: Fix this so it works with the agent argument
+        self.region = TownRegion(
+            self.entrance_portal, self.schedule, self.agent
+        )
 
 
 class TownBuildingMorph(Morph):
@@ -178,6 +141,8 @@ class RegionSite(Site):
         )
 
 
+# TODO: Make some kind of a class-factory for the following RegionSites?
+
 class Cave(RegionSite):
     region_type = region.EmptyCaves
 
@@ -189,6 +154,9 @@ class RuneCave(RegionSite):
 class Tomb(RegionSite):
     region_type = region.EmptyTomb
 
+
+class Hive(RegionSite):
+    region_type = region.GiantInsectHive
 
 
 class Habitation(Morph):

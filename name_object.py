@@ -10,6 +10,7 @@ except ImportError:
     wn = None
     using_nltk = False
 
+
 def recursive_hypernyms(synset):
     assert using_nltk
     next_hypernyms = synset.hypernyms()
@@ -95,3 +96,6 @@ class Name:
 
     def __add__(self, other):
         return self.add(other, template="{} {}")
+
+    def __radd__(self, other):
+        return self.add(other, template="{1} {0}")

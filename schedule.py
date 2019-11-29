@@ -42,7 +42,7 @@ class TimerEvent(Event):
         elif self.callback:
             self.callback()
         else:
-            raise Exception("Hey! A timer had no callback or keyword. 'Sup with that?")
+            raise Exception("Hey! A timer had no callback or keyword.")
 
 
 class ActionEvent(Event):
@@ -104,7 +104,7 @@ class Schedule:
         self.end_game = False
 
     def set_timer(self, actor, time, keyword=None, callback=None):
-        TimerEvent(self, actor, time, keyword, callback)
+        return TimerEvent(self, actor, time, keyword, callback)
 
     def add_event(self, new_event):
         if new_event.is_instant:
@@ -129,6 +129,12 @@ class Schedule:
         self.actors.remove(actor)
         self.event_list = [e for e in self.event_list if e.actor != actor]
         actor.scheduled_event = None
+
+    def cancel_event(self, event):
+        try:
+            self.event_list.remove(event)
+        except IndexError:
+            pass
 
     def cancel_actions(self, actor):
         e = actor.scheduled_event

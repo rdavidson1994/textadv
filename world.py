@@ -1,23 +1,31 @@
 import actor
+import agent
 import building
+import direction
 import game_object
 import location
 import name_object
+import namemaker
 import phrase
+import posture
 import schedule
 import sites
 import spells
+import wide
 from direction import north, south, east, west, up, down
-from wide import Location
+from direction import random as random_direction
+from wide import Overworld
 import population
 
 
-def make_player(location, coordinates, landmarks=set(), use_web_output=False):
+def make_player(location, coordinates, landmarks=set(), use_web_output=False, postures=()):
     john = actor.Hero(
         location=location,
         name="john",
         coordinates=coordinates
     )
+    for p in postures:
+        john.learn_posture(p)
     my_parser = john.ai
     my_parser.web_output = use_web_output
     john.view_location()
@@ -33,7 +41,7 @@ def make_player(location, coordinates, landmarks=set(), use_web_output=False):
     )
     sword.damage_type = "sharp"
     sword.damage_mult = 6
-    phrase.QuitPhrase(my_parser, ["quit", "exit"])
+    phrase.QuitPhrase(my_parser, ["quit"])
     phrase.InventoryPhrase(my_parser, ["i", "inventory"])
     return john
 
@@ -53,9 +61,9 @@ class World:
 class ActorTest(World):
     def __init__(self):
         super().__init__()
-        self.test_location = Location(
-            description="Test Location",
-            sched=self.schedule
+        self.test_location = location.Location(
+            description="Test Overworld",
+            sched=self.schedule,
         )
         self.actor = make_player(
             location=self.test_location,
@@ -63,12 +71,83 @@ class ActorTest(World):
         )
 
 
-class Static(World):
+class SiteTest(World):
+    def __init__(self, site_type, save_manager=None):
+        super().__init__(save_manager)
+        self.overworld = Overworld(
+            sched=self.schedule,
+            width=10,
+            height=10,
+        )
+        site_type.at_point(
+            location=self.overworld,
+            coordinates=(5,5),
+            direction=down,
+            landmark_name=name_object.Name("test site"),
+        )
+        self.actor = make_player(
+            location=self.overworld,
+            coordinates=(5,5),
+        )
+
+class Random(World):
     def __init__(self, use_web_output=False, save_manager=None):
+        super().__init__(save_manager=save_manager)
+        day = 1000 * 60 * 60 * 24
+        self.schedule = schedule.Schedule()
+        world_map = wide.Overworld(
+            sched=self.schedule,
+            width=50,
+            height=50,
+        )
+
+        world_events = agent.WorldEvents(world_map)
+
+        town_n = 10
+        cave_n = 24
+        caves = [
+            sites.RuneCave.at_point(
+                location=world_map,
+                coordinates=world_map.random_point(),
+                direction=direction.down,
+                landmark_name=namemaker.make_name() + "cave"
+            )
+            for i in range(cave_n)
+        ]
+
+        towns = [
+            agent.Town(
+                name=namemaker.make_name(),
+                location=world_map,
+                coordinates=world_map.random_point(),
+            )
+            for i in range(town_n)
+        ]
+        self.schedule.run_game(250 * day)
+
+        self.actor = make_player(
+            location=world_map,
+            postures=(posture.random_posture(),),
+            coordinates=world_map.random_point(),
+            landmarks=set(town.site.landmark for town in towns),
+            use_web_output=use_web_output,
+        )
+
+        if self.save_manager:
+            phrase.SpecialPhrase(
+                callback=self.save,
+                parser=self.actor.ai,
+                synonyms=["<<save>>"]
+            )
+        # dude.view_location()
+        # world_schedule.run_game()
+
+class Static(World):
+    def __init__(self, use_web_output=False, save_manager=None, site_type=sites.Cave):
         super().__init__(save_manager=save_manager)
         self.directions = [north, south, east, west, up, down]
 
-        plains = Location(
+        plains = Overworld(
             description="You stand in a grassy field",
             sched=self.schedule,
         )
@@ -79,7 +158,7 @@ class Static(World):
             coordinates=(15, 14),
             name="slope",
         )
-        cave_site = sites.Cave(
+        cave_site = site_type(
             sched=self.schedule,
             entrance_portal=caves_portal.target
         )

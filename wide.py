@@ -1,6 +1,8 @@
+import direction
 import game_object
 import random
 import math
+import encounter
 from string import ascii_lowercase
 from collections import Counter
 
@@ -8,11 +10,12 @@ from collections import Counter
 import location
 
 
-class Location(location.Location):
+class Overworld(location.Location):
     view_distance = 10
 
     def __init__(self, *args, width=30, height=30, **kwargs):
         location.Location.__init__(self, *args, **kwargs)
+        self.encounter_fields = []
         self.width = width
         self.height = height
         self.traits.add("wide")
@@ -69,18 +72,34 @@ class Location(location.Location):
             b = second.get_coordinates(self)
         except AttributeError:
             b = second
-        return (b[0]-a[0], b[1]-a[1])
+        return b[0]-a[0], b[1]-a[1]
 
     def distance(self, first, second):
-        disp = self.displacement(first, second)
-        return math.sqrt(sum(x**2 for x in disp))
+        displacement = self.displacement(first, second)
+        return math.sqrt(sum(x**2 for x in displacement))
+
+    def create_pocket(self, actor):
+        assert actor.has_location(self)
+        pocket = encounter.EncounterPocket(
+            sched=self.schedule,
+            description="You have been ambushed in a small, grassy clearing."
+        )
+        exit_direction = direction.random(up_and_down=False)
+        encounter.PocketExit(
+            encounter_pocket=pocket,
+            locations=(pocket, self),
+            directions=(exit_direction, exit_direction.opposite),
+            coordinate_pairs=(None, actor.coordinates),
+            name_pair=("exit", "entrance")
+        )
+        return pocket
 
     def compass_direction(self, first, second):
         x, y = self.displacement(first, second)
         angle = math.atan2(y, x)
         if angle < 0:
             angle += 2*math.pi
-        directions = ["e","ne","n","nw","w","sw","s","se",]
+        directions = ["e", "ne", "n", "nw", "w", "sw", "s", "se", ]
 
         petal_width = (2 * math.pi) / len(directions)
         if angle > 2*math.pi - petal_width/2:
@@ -103,6 +122,30 @@ class Location(location.Location):
     def includes_point(self, x, y):
         return 0 <= x <= self.width and 0 <= y <= self.height
 
+    def add_encounter_field(self, field):
+        self.encounter_fields.append(field)
+
+    def remove_encounter_field(self, field):
+        self.encounter_fields.remove(field)
+
+    def generate_encounters(self, actor):
+        assert self.has_thing(actor)
+        x, y = actor.coordinates
+        random.shuffle(self.encounter_fields)
+        for field in self.encounter_fields:
+            if (
+                field.targets_actor(actor)
+                and random.random() < field.probability(actor, x, y)
+            ):
+                field.affect_actor(actor)
+                break
+
+    def broadcast_announcement(self, action):
+        out = super().broadcast_announcement(action)
+        if getattr(action, "travels_overland", False):
+            self.generate_encounters(action.actor)
+        return out
+
     def get_text_map(
         self,
         viewer=None,
@@ -111,9 +154,21 @@ class Location(location.Location):
         stride_y=1.0,
         radius=10,
     ):
-        # By default, we map each 0.5x1.0 chunk of land to two characters
+        # By default, we map each 1.0x1.0 chunk of land to two characters
         if viewer is None:
             return "No map is available"
+
+        try:
+            #TODO: Extract this escaping up to the player AI at least
+            web_mode = viewer.ai.web_output
+        except AttributeError:
+            web_mode = False
+
+        if web_mode:
+            space = "&nbsp"
+        else:
+            space = " "
+
         count_x = int(self.width / stride_x)
         count_y = int(self.height / stride_y)
 
@@ -127,7 +182,7 @@ class Location(location.Location):
             elif on_horizontal:
                 return "--"
             else:
-                return "  "
+                return space*2
 
         def set_grid(grid, coordinates, value):
             x_index, y_index = indexes_from_coords(coordinates)
@@ -158,7 +213,7 @@ class Location(location.Location):
                 set_grid(full_grid, landmark.coordinates, symbol)
 
         if viewer.has_location(self) and viewer.coordinates is not None:
-            set_grid(full_grid, viewer.coordinates, "@ ")
+            set_grid(full_grid, viewer.coordinates, "@"+space)
             legend_entries.append("@: You")
 
         if full_size:
@@ -184,9 +239,9 @@ class Location(location.Location):
 
 """
 my_schedule = schedule.Schedule()
-plains = thing.Location(description="You are standing in field of grass.")
-house = thing.Location(description="You are in a house.")
-stronghold = thing.Location(description="You are in a stronghold")
+plains = thing.Overworld(description="You are standing in field of grass.")
+house = thing.Overworld(description="You are in a house.")
+stronghold = thing.Overworld(description="You are in a stronghold")
 
 sword = thing.Item(location=plains,
                    name="iron longsword",

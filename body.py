@@ -12,6 +12,7 @@ except ImportError:
 
 class Body:
     bleeds = True
+    death_threshold = 300
 
     def __init__(self, owner):
         self.owner = owner
@@ -83,13 +84,13 @@ class Body:
     def get_damage_report(self, verbose=False, alpha=0.2, viewer=None):
         you = self.owner.get_identifier(viewer)
         out = ""
+        if viewer == self.owner:
+            have = "have"
+            are = "are"
+        else:
+            have = "has"
+            are = "is"
         if self.damage > 0 or verbose:
-            if viewer == self.owner:
-                have = "have"
-                are = "are"
-            else:
-                have = "has"
-                are = "is"
 
             left_bound = self.inv_ko_cdf(alpha / 2)
             right_bound = self.inv_ko_cdf(1 - alpha / 2)
@@ -118,6 +119,10 @@ class Body:
 
     def take_damage(self, amt, typ):
         acute_damage = self.damage + amt * 3
+        if acute_damage >= self.death_threshold:
+            self.die(amt, typ)
+            return
+
         if amt >= 10 and typ == "sharp" and self.bleeds:
             self.bleeding_damage += floor(amt / 10)
             if self.stable:
@@ -130,9 +135,6 @@ class Body:
         if ko_damage > self.get_ko_cutoff():
             duration = randint(10, 15)
             self.take_ko(duration)
-
-        if acute_damage >= 300:
-            self.die(amt, typ)
         self.damage += amt
         self.owner.notice_damage(amt, typ)
 
@@ -172,7 +174,7 @@ class Body:
     def get_ko_cutoff(self):
         y = -1
         while y <= self.damage:
-            y = floor(310 * betavariate(7, 4))
+            y = floor((self.death_threshold+10) * betavariate(7, 4))
         return y
 
     def inv_ko_cdf(self, alpha):
@@ -182,8 +184,8 @@ class Body:
         sample.sort()
         rank = int(sample_size * alpha)
         percentile = sample[rank]
-        if percentile > 300:
-            return 300
+        if percentile > self.death_threshold:
+            return self.death_threshold
         else:
             return percentile
 

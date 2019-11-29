@@ -274,7 +274,7 @@ class DetailAction(ZeroTargetAction):
 
 
 class Look(DetailAction):
-    synonyms = ["look", "examine", "x"]
+    synonyms = ["look", "examine", "x", "l"]
 
     def affect_game(self):
         self.actor.view_location()
@@ -308,9 +308,9 @@ class Verbose(DetailAction):
 
     def get_success_string(self, viewer=None):
         if self.actor.ai.verbose:
-            return ("Verbose mode disabled")
+            return "Verbose mode disabled"
         else:
-            return ("Verbose mode enabled")
+            return "Verbose mode enabled"
 
 
 class Diagnose(DetailAction):
@@ -325,6 +325,35 @@ class Diagnose(DetailAction):
 
     def get_success_string(self, viewer=None):
         return self.actor.get_health_report(viewer=viewer)
+
+
+class EquipWarning(DetailAction, SingleTargetAction):
+    """A stand in, so people don't get confused about equipping stuff"""
+    synonyms = ["equip", "wield"]
+
+    def get_success_string(self, viewer=None):
+        return (
+            "You don't need to equip or wield weapons yet. \n"
+            "You can type \"hit [target] with [weapon]\" to use a specific weapon,\n"
+            "or just \"hit [target]\" to use the \"best\" weapon you have."
+        )
+
+
+class TutorialAction(DetailAction):
+    synonyms = ["help", "\\?"]
+
+    def get_success_string(self, viewer=None):
+        return "\n".join([
+            "Here are some example commands to get you started:",
+            '"take [something]", "drop [something]", and "inventory" do what you\'d expect.',
+            '"n" or "north": Travel north on the overland map, or in a dungeon.',
+            '"enter [some place]": Enter a site from the overland map.',
+            '"go to [some place]": Fast travel to somewhere on the overland map.',
+            '"health" or "h": View a report of your current health, stamina, and mana.',
+            '"map" or "m": Display the full overland or dungeon map.',
+            '"hit [target] with [weapon]": attack with a specific weapon.',
+            '"hit [target]": attack with the "best" weapon in your inventory.',
+        ])
 
 
 class SpellReport(DetailAction):
@@ -443,7 +472,7 @@ class Drop(mixins.HeldTarget, SingleTargetAction):
 class Enter(mixins.Motion, SingleTargetAction):
     """For when the player says 'Enter the wooden door'.
     the door you enter is the one he/she tells you to."""
-    synonyms = ["enter"]
+    synonyms = ["enter", "exit"]
     target_traits = ["portal"]
 
     def __init__(self, actor, *target_list):
@@ -501,9 +530,9 @@ class Unlock(LockingAction):
 
 
 class WeaponStrike(mixins.HeldTool, ToolAction):
-    synonyms = ["strike", "hit", "attack"]
-    time_elapsed = 250
-    cooldown_time = 750
+    synonyms = ["strike", "hit", "attack", "kill", "fight"]
+    time_elapsed = None  # Overwritten in __init__
+    cooldown_time = None  # Overwritten in __init__
     is_hostile = True
     is_physical_attack = True
     stamina_cost = 6
@@ -516,6 +545,8 @@ class WeaponStrike(mixins.HeldTool, ToolAction):
             weapon = None
 
         self.attack_roll = actor.get_attack_roll(weapon)
+        self.time_elapsed = actor.get_attack_onset_time()
+        self.cooldown_time = actor.get_attack_cooldown_time()
 
     def check_geometry(self):
         if not self.actor.can_reach(self.target):
@@ -530,8 +561,62 @@ class WeaponStrike(mixins.HeldTool, ToolAction):
         except AttributeError:
             damage_type = "blunt"
             damage_mult = 1
-        amt = randint(0, 15) * damage_mult
+        amt = self.actor.get_melee_damage(self.tool) * damage_mult
         self.target.take_damage(amt, damage_type)
+
+
+class AssumePosture(ZeroTargetAction):
+    priority = 20
+    time_elapsed = 100
+    cooldown_time = 50
+    synonyms = ["assume", "adopt"]
+
+    class VerbClass(Verb):
+        match_strings = ["VERB POSTURE"]
+
+    def __init__(self, *args, posture, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.posture = posture
+
+    def check_geometry(self):
+        from actor import Humanoid
+        if isinstance(self.actor, Humanoid):
+            if self.posture in self.actor.postures_known:
+                return True, ""
+            return False, "You don't know that posture."
+        return False, "You can't use stances or grips since you are not humanoid"
+
+    def affect_game(self):
+        self.actor.adopt_posture(self.posture)
+
+    def get_success_string(self, viewer=None):
+        s = self.possible_s(viewer)
+        name = self.actor.get_name(viewer)
+        posture_name = self.posture.name.get_text(viewer)
+        return f"{name} assume{s} the {posture_name}"
+
+
+class PostureReport(DetailAction):
+    synonyms = ["stances", "guards", "postures"]
+
+    def get_success_string(self, viewer=None):
+        from actor import Humanoid
+        from posture import Stance, Guard
+        if isinstance(self.actor, Humanoid) and len(self.actor.postures_known) != 0:
+            out = ["Stances:"]
+            out.extend(
+                posture.get_summary(self.actor)
+                for posture in self.actor.postures_known
+                if isinstance(posture, Stance)
+            )
+            out.append("\nGuards:")
+            out.extend(
+                posture.get_summary(self.actor)
+                for posture in self.actor.postures_known
+                if isinstance(posture, Guard)
+            )
+            return "\n".join(out)
+        return "You don't know any postures"
 
 
 class VectorTravel(ZeroTargetAction):
@@ -552,6 +637,8 @@ class VectorTravel(ZeroTargetAction):
             self.new_coordinates = None
 
     def check_geometry(self):
+        if not self.actor.location.has_trait("wide"):
+            return False, "You can't travel overland from here."
         if self.new_coordinates is None:
             return False, "You can't travel that way from here."
         elif not self.actor.location.includes_point(*self.new_coordinates):
@@ -635,7 +722,7 @@ class Sell(Transaction):
 class RentInnRoom(SingleTargetAction):
     is_social = True
     synonyms = ["rent", "rent room"]
-    time_elapsed = 60000
+    time_elapsed = 28800000
 
     class VerbClass(Verb):
         match_strings = ["VERB room from TARGET", "VERB from TARGET"]
@@ -756,6 +843,7 @@ class Routine:
             sub_action = self.routine.get_action()
             if sub_action is None:
                 self.routine = None
+                return self.get_local_action()
             elif not sub_action.is_valid()[0]:
                 self.routine = None
                 return self.invalid_action_fallback(sub_action)
@@ -865,7 +953,7 @@ class ReadRoutine(SingleActionRoutine, SingleTargetAction):
 
 
 class DefaultStrikeRoutine(SingleActionRoutine, SingleTargetAction):
-    synonyms = ["strike", "hit", "attack"]
+    synonyms = WeaponStrike.synonyms
     priority = 15
     empty_reason = "No weapon strike"
 
@@ -893,6 +981,19 @@ class TakeAllRoutine(ActionListRoutine, ZeroTargetAction):
                 for item in self.actor.get_valid_targets()]
 
 
+class LootRoutine(ActionListRoutine, SingleTargetAction):
+    synonyms = ["loot"]
+    target_traits = ["container"]
+    def build_action_list(self):
+        out = [
+            Take(self.actor, item)
+            for item in self.actor.get_valid_targets()
+            if item.has_location(self.target)
+        ]
+        if len(out) == 0:
+            self.empty_reason = f"There is nothing to take in {self.target.get_identifier(self.actor)}"
+
+
 class RestRoutine(Routine, ZeroTargetAction):
     synonyms = ["rest"]
     empty_reason = "You are already rested."
@@ -902,6 +1003,24 @@ class RestRoutine(Routine, ZeroTargetAction):
             return Wait(self.actor)
         else:
             return None
+
+
+class ExitRoutine(SingleActionRoutine, ZeroTargetAction):
+    synonyms = ["exit", "leave"]
+
+    def get_single_action(self):
+        candidates = self.actor.get_valid_targets()
+        portals = [c for c in candidates if c.has_trait("portal")]
+        if len(portals) == 0:
+            return FailAction(self.actor, "There are no exits from here.")
+        elif len(portals) == 1:
+            return Enter(self.actor, portals[0])
+        else:
+            exits = [p for p in portals if p.has_name("exit", viewer=self.actor)]
+            if len(exits) == 1:
+                return Enter(self.actor, exits[0])
+            else:
+                return FailAction(self.actor, "There are multiple exits.")
 
 
 class DurationWaitRoutine(Routine, ZeroTargetAction):
@@ -983,7 +1102,7 @@ class LeaveDungeonRoutine(Routine, ZeroTargetAction):
         if self.actor.location.has_trait("wide"):
             debug("ACTOR FLED TO WILDERNESS")
             return WildernessFlee(self.actor)
-        game_exits = self.actor.location.things_with_name("slope")
+        game_exits = self.actor.location.things_with_name("exit", viewer=self.actor)
         if game_exits:
             exit = next(iter(game_exits))
             return Enter(self.actor, exit)

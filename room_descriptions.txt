@@ -121,3 +121,31 @@ This room houses a humble church {pews:, with pews to hold thirty-some people},
 intended for viewings and small memorial services.
 {windows: Large glass windows *else: Ruined, paneless windows}
 provide some of the complex's only natural light.
+
+
+@HiveEntrance
+Before you lies a sloping mound of earth the size of a small cottage.
+The mound surrounds a burrow easily large enough to crawl through
+
+@QueenApartment
+This chamber opens into a large pit, meant to house the queen's
+enormous girth.
+
+@InsectFoodStorage
+This room must have been intended as a pantry of sorts. Each wall
+has had small hollows dug out at regular intervals, creating the
+impression of shelves.
+{food: About half of the hollows have been stuffed with a
+nauseous mixture of vegetation, bits of dead animals, and
+some milky preservative or garnish likely secreted by the
+hive's builders}
+
+@InsectNest
+This low chamber is meant to provide a sleeping area for the
+creatures that built this place. Narrow, short tunnels run away
+from the main area in all directions, like tiny apartments.
+
+@InsectTreasureRoom
+This tall, pit-like chamber
+{treasure: has a pile of treasure and shiny objects at the bottom.
+*else: was used to house treasures and shiny objects.}

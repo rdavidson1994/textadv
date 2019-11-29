@@ -111,3 +111,7 @@ test.py
 # macOS
 .DS_Store
 .swp
+
+# editors
+.idea/
+.vscode/

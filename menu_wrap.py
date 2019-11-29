@@ -3,10 +3,12 @@ import json
 web_new_line = "WEBNEWLINE"
 
 
-def menu_wrap(noun, verbs):
+def menu_wrap(noun, verbs, display_noun=None):
+    if display_noun is None:
+        display_noun = noun
     json_object = {
         "type": "dropdown",
-        "label": noun,
+        "label": display_noun,
         "options": [
             {"label": verb, "input": verb+" "+noun}
             for verb in verbs

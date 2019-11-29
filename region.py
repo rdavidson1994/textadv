@@ -1,5 +1,7 @@
+import random
 from random import random, randint, sample, shuffle, choice
 
+import errors
 import location
 from direction import north, south, east, west
 import spells
@@ -60,7 +62,9 @@ class CreaturePolicy:
         return self.enemy_type(location, name=name, sched=self.schedule)
 
 
-class Region:
+class UndergroundRegion:
+    reconnect_probability = 0.5
+
     def __init__(self, sched=None, entrance_portal=None):
         self.node_list = []
         self.connection_list = []
@@ -325,7 +329,7 @@ class Region:
         return self.path_to_goal(start, goal)
 
 
-class Caves(Region):
+class Caves(UndergroundRegion):
     enemy_number = 0
     enemy_adjectives = []
     essential_rooms = ()
@@ -450,33 +454,23 @@ class EmptyCaves(Caves):
     filler_rooms = (dungeonrooms.CaveFiller,)
 
 
+class GiantInsectHive(Caves):
+    reconnect_probability = 1.0
+    breed_count = 5
+    essential_rooms = (
+        dungeonrooms.HiveEntrance,
+        dungeonrooms.QueenApartment,
+        dungeonrooms.InsectFoodStorage,
+        dungeonrooms.InsectNest,
+        dungeonrooms.InsectTreasureRoom,
+    )
+    optional_rooms = ()
+    filler_rooms = (dungeonrooms.HiveFiller,)
+
+
+
 class RuneCave(EmptyCaves):
     essential_rooms = (dungeonrooms.CaveEntrance, dungeonrooms.RuneChamber)
-
-
-# class KoboldCaves(Caves):
-#     essential_rooms = (CaveEntrance, TreasureRoom, Barracks, Kitchen)
-#     optional_rooms = (MessHall, Prison, Apothecary, BossQuarters)
-#     filler_rooms = (CaveFiller,)
-#     breed_count = 4
-#     enemy_number = 6
-#     enemy_adjectives = ["skinny", "tall", "hairy",
-#                         "filthy", "pale", "short", ]
-#
-#     def make_enemy(self, location=None, adjective=""):
-#         name = LegacyName(adjective, "kobold")
-#         return actor.SquadActor(location, name=name, sched=self.schedule)
-#
-#     def make_boss(self, location=None):
-#         boss = actor.Person(location=location,
-#                            names=["kobold leader", "leader", "kobold"],
-#                            sched=self.schedule)
-#         boss.combat_skill = 75
-#         boss.ai = ai.WanderingMonsterAI(boss)
-#         spear = Item(location=boss, name=LegacyName(["crude"],["sword"]))
-#         spear.damage_type = "sharp"
-#         spear.damage_mult = 3
-#         return boss
 
 
 class EmptyTomb(Caves):
@@ -491,23 +485,6 @@ class EmptyTomb(Caves):
     )
     filler_rooms = (dungeonrooms.CaveFiller,)
     breed_count = 2
-
-
-# class GhoulTomb(Caves):
-#     essential_rooms = (TombEntrance, Crypt)
-#     optional_rooms = (MeatChamber, OfferingRoom, Temple, TombSanctum)
-#     filler_rooms = (CaveFiller,)
-#     enemy_number = 4
-#     enemy_adjectives = KoboldCaves.enemy_adjectives
-#     breed_count = 2
-#
-#     def make_enemy(self, location=None, adjective=""):
-#         name = LegacyName(adjective, "ghoul")
-#         ghoul = actor.Person(location, name=name, sched=self.schedule)
-#         ai.WanderingMonsterAI(ghoul)
-#         ghoul.body = body.UndeadBody(ghoul)
-#         ghoul.combat_skill = 60
-#         return ghoul
     
 
 class Connection:
@@ -610,7 +587,7 @@ class Node:
                 found_con = self.region.connection_with_endpoints(
                     self, found_node
                 )
-                if found_con is None and random() < 0.5:
+                if found_con is None and random() < self.region.reconnect_probability:
                     Connection(self.region, self, found_node, d)
             else:
                 Node(self.region, target_vector, self, d)
@@ -697,3 +674,62 @@ if __name__ == "__main__":
     debug(john.body.damage)
     debug("Monster damage:")
     debug([(m.name, m.body.damage) for m in my_schedule.actors])
+
+
+class VillageCenter(location.Location):
+    def __init__(self, *args, world_agent, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.agent = world_agent
+
+    def get_description(self, viewer):
+        name = self.agent.get_name(viewer)
+        unrest = self.agent.unrest
+        if self.agent.destroyed:
+            verb = "lies in ruins"
+        elif unrest < 10:
+            verb = "is flourishing"
+        elif unrest < 20:
+            verb = "is doing fine"
+        elif unrest < 30:
+            verb = "has seen better days"
+        elif unrest < 40:
+            verb = "is struggling to survive"
+        else:
+            verb = "is on the brink of collapse"
+        out = f"The village of {name} {verb} (unrest={unrest:.2f}).\n"
+        worst = self.agent.worst_problem()
+        if worst is not None:
+            from agent import day
+            delay = self.agent.last_attack(worst) / day
+            out += (
+                f"{name}'s greatest hardship is {worst.get_name(viewer)}, "
+                f"who most recently attacked {delay:.2f} days ago."
+            )
+        return out
+
+
+class TownRegion:
+    def __init__(self, entrance_portal, sched, agent):
+        self.schedule = sched
+        self.main_location = VillageCenter(
+            name="town",
+            world_agent=agent
+        )
+        self.locations = [self.main_location]
+        entrance_portal.change_location(self.main_location)
+        # building.WeaponShop(self.main_location, sched=self.schedule)
+
+    def arbitrary_location(self):
+        return self.main_location
+
+    def add_room(self, room):
+        self.locations.append(room)
+
+    def room_with_type(self, room_type):
+        candidates = [
+            loc for loc in self.locations if isinstance(loc, room_type)
+        ]
+        if candidates:
+            return random.choice(candidates)
+        else:
+            raise errors.MissingNode

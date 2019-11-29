@@ -6,7 +6,7 @@ from math import sqrt
 from full_path import full_path
 
 class NameMaker:
-    syllable_choices = {1: 2, 2: 8, 3: 3, 4: 1}
+    syllable_choices = {1: 2, 2: 8, 3: 3}
 
     def __init__(self):
         self.word_onset = self.read("word_onset.txt")
@@ -28,11 +28,6 @@ class NameMaker:
                 return c, w
             up_to += w
         assert False, "Shouldn't get here"
-
-    # @staticmethod
-    # def choose(dictionary):
-    #     item = random.choice(list(dictionary.items()))
-    #     return item
 
     @staticmethod
     def read(file_name):
