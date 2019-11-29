@@ -124,7 +124,7 @@ class Body:
             return
 
         if amt >= 10 and typ == "sharp" and self.bleeds:
-            self.bleeding_damage += floor(amt / 10)
+            self.bleeding_damage += floor(amt * random()/5)
             if self.stable:
                 self.start_updating()
 
