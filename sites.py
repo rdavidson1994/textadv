@@ -120,14 +120,15 @@ class TownSite(Site):
 class TownBuildingMorph(Morph):
     def __init__(self, building_factory):
         self.building_factory = building_factory
+        self.building = None
 
     def alter_region(self, region):
         assert isinstance(region, TownRegion)
-        building = self.building_factory(
+        self.building = self.building_factory(
             region.main_location,
             sched=region.schedule,
         )
-        region.add_room(building)
+        region.add_room(self.building)
         return region
 
 

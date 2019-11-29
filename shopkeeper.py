@@ -2,6 +2,8 @@ import ai
 import actor
 import action
 import game_object
+import agent
+import population
 import environment
 import building
 
@@ -35,7 +37,7 @@ class ShopkeeperAI(ai.PeacefulAI):
             return False, out_string
         elif isinstance(act, action.Sell):
             item = act.tool
-            if item.price is None: # or item isn't sold by merchant
+            if item.price is None:  # TODO: or item isn't sold by merchant
                 return False, "That item has no monetary value."
             elif item.has_location(act.actor):
                 return False, "You must put down the item to sell it."

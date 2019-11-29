@@ -232,10 +232,71 @@ class PopulationAgent(WorldAgent):
         pass
 
 
+
+class ShopType:
+    def __init__(self, shop_name, shopkeeper_name, building_type):
+        self.shop_name = shop_name
+        self.shopkeeper_name = shopkeeper_name
+        self.building_type = building_type
+
+
+
+class ShopkeeperAgent(PopulationAgent):
+    morph_type = None
+    town = None
+    shop_types = [
+        ShopType("inn", "innkeeper", building.Inn),
+        ShopType("weapon shop", "weaponsmith", building.WeaponShop),
+    ]
+
+    def __init__(self, *args, shop_type, town, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.shop_type = shop_type
+        self.town = town
+
+    @classmethod
+    def in_world(cls, world_map):
+        shop_type = choice(cls.shop_types)
+        return cls(
+            name=namemaker.make_name()+","+shop_type.shopkeeper_name,
+            location=world_map,
+            coordinates=world_map.random_point(),
+            shop_type=shop_type,
+            town=None,
+        )
+
+    def town_utility(self, town):
+        crowding = len(town.populations)+1
+        distance = self.location.distance(self, town.get_name())
+        return -town.unrest - distance - crowding
+
+    def find_town(self):
+        towns = self.location.things_with_trait(
+            "town", self.coordinates, 30
+        )
+        if not towns:
+            return None
+        return max(towns, key=self.town_utility)
+
+
+
+    def take_turn(self):
+        if self.town is None:
+            self.town = self.find_town()
+            if not self.town:
+                print(f"{self.name} gave up on being a {self.shop_type.shopkeeper_name}")
+                self.vanish()
+            else:
+                print(f"{self.name} moved to {self.town.landmark.name}")
+            return
+
+        if
+
+
+
 class NuisanceAI(WaitingAI):
     def is_hostile_to(self, other):
         return other != self
-
 
 class ExternalNuisance(PopulationAgent):
     morph_type = None
