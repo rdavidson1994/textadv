@@ -25,7 +25,7 @@ class Body:
         self.bleeding_damage = 0
         self.ko_time = 0
         self.stable = True  # if false, needs updates
-        self.mana_regen_rate = 1
+        self.mana_regen_rate = 0
 
     def take_ko(self, amt):
         self.ko_time += amt
@@ -124,7 +124,7 @@ class Body:
             return
 
         if amt >= 10 and typ == "sharp" and self.bleeds:
-            self.bleeding_damage += floor(amt / 10)
+            self.bleeding_damage += floor(amt * random()/5)
             if self.stable:
                 self.start_updating()
 
