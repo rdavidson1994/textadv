@@ -290,8 +290,6 @@ class ShopkeeperAgent(PopulationAgent):
                 print(f"{self.name} moved to {self.town.landmark.name}")
             return
 
-        if
-
 
 
 class NuisanceAI(WaitingAI):
