@@ -2,11 +2,10 @@
 
 Make sure you have the latest python3 install. Then do this:
 
-```py entrypoint.py```
+```python entrypoint.py```
 
-If that didn't work, do this
-
-```python3 entrypoint.py```
+(On Linux/Mac, you will need to use `python3` instead.
+Some Windows installs will be under `py`)
 
 Example commands:
 
