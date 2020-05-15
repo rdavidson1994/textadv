@@ -18,36 +18,46 @@ class Population:
             return region.arbitrary_location()
 
     def __init__(self):
+        self.is_town_friendly = False
         self.built = False
         self.site = None
         self.rendered = False
         self.actors = []
         self.location_functions = {}
 
+    def refresh(self):
+        # Hook for populations to change things up between player visits.
+        pass
+
     def render(self, region):
         if not self.built:
             self.build_actors()
             self.built = True
         if not self.rendered:
-            self.show_actors(region)
+            self.refresh()
+            self.show(region)
         self.rendered = True
+
+    def expel(self):
+        self.site = None
 
     def allows_other(self, population):
         return False
 
     def hide_actors(self):
         assert self.rendered
+        # Filter out dead and absent actors
         self.actors = [a for a in self.actors if a.location is not None]
-        # Filter out dead actors
         for actor in self.actors:
             actor.vanish()
         self.rendered = False
 
-    def show_actors(self, region):
+    def show(self, region):
         for actor in self.actors:
             actor.materialize(self.get_location(actor, region))
 
     def build_actors(self):
+        # responsible for creating actors
         pass
 
 

@@ -328,6 +328,9 @@ class UndergroundRegion:
         goal = dungeonrooms.choice(self.node_list)
         return self.path_to_goal(start, goal)
 
+    def has_location(self, location_):
+        return any((node.location == location_ for node in self.node_list))
+
 
 class Caves(UndergroundRegion):
     enemy_number = 0
@@ -686,11 +689,11 @@ class VillageCenter(location.Location):
         unrest = self.agent.unrest
         if self.agent.destroyed:
             verb = "lies in ruins"
-        elif unrest < 10:
+        elif unrest < 5:
             verb = "is flourishing"
-        elif unrest < 20:
+        elif unrest < 10:
             verb = "is doing fine"
-        elif unrest < 30:
+        elif unrest < 20:
             verb = "has seen better days"
         elif unrest < 40:
             verb = "is struggling to survive"
@@ -703,8 +706,14 @@ class VillageCenter(location.Location):
             delay = self.agent.last_attack(worst) / day
             out += (
                 f"{name}'s greatest hardship is {worst.get_name(viewer)}, "
-                f"who most recently attacked {delay:.2f} days ago."
+                f"who most recently attacked {delay:.2f} days ago.\n"
             )
+        for enemy in self.agent.enemy_priority:
+            if enemy.killer == viewer:
+                out += (
+                    f"The populace is grateful to you for defeating {enemy.get_name(viewer)}, "
+                    f"who had caused the village {self.agent.enemy_priority[enemy]:.2f} units of hardship."
+                )
         return out
 
 
@@ -721,6 +730,9 @@ class TownRegion:
 
     def arbitrary_location(self):
         return self.main_location
+
+    def has_location(self, location_):
+        return location_ in self.locations
 
     def add_room(self, room):
         self.locations.append(room)

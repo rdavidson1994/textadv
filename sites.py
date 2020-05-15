@@ -36,11 +36,17 @@ class Site:
         return all(p.allows_other(population) for p in self.populations)
 
     def add_population(self, population):
-        assert self.allows_population(population)
+        if not self.allows_population(population):
+            print(self.allows_population(population))
         self.populations.append(population)
 
     def remove_population(self, population):
         self.populations.remove(population)
+
+    def die(self):
+        # copy, to avoid iterator invalidation
+        for population in list(self.populations):
+            population.expel()
 
     def has_morph_type(self, typ):
         return any(isinstance(m, typ) for m in self.morphs)
@@ -109,7 +115,8 @@ class TownSite(Site):
         self.agent = agent
 
     def allows_population(self, population):
-        return False
+        # Placeholder for better faction logic
+        return population.is_town_friendly
 
     def construct_base_region(self):
         self.region = TownRegion(
@@ -118,18 +125,27 @@ class TownSite(Site):
 
 
 class TownBuildingMorph(Morph):
-    def __init__(self, building_factory):
+    def __init__(self, building_factory, shopkeeper_actor=None):
         self.building_factory = building_factory
         self.building = None
+        self.shopkeeper_actor = shopkeeper_actor
 
     def alter_region(self, region):
         assert isinstance(region, TownRegion)
         self.building = self.building_factory(
             region.main_location,
             sched=region.schedule,
+            shopkeeper_actor=self.shopkeeper_actor,
         )
         region.add_room(self.building)
         return region
+
+    def has_building(self):
+        return self.building is not None
+
+    def get_building(self):
+        assert self.has_building()
+        return self.building
 
 
 class RegionSite(Site):

@@ -19,13 +19,20 @@ class Shop(Building):
     default_name = "shop"
     clerk_title = "shopkeeper"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, shopkeeper_actor=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.shopkeeper = shopkeeper.Person(
-            name=make_name().add(self.clerk_title, "{}, {}"),
-            location=self,
-        )
+        if shopkeeper_actor:
+            self.shopkeeper = shopkeeper_actor
+        else:
+            self.shopkeeper = shopkeeper.Person(
+                name=make_name().add(self.clerk_title, "{}, {}"),
+                location=self,
+            )
 
+
+class Temple(Shop):
+    default_name = "temple"
+    clerk_title = "monk"
 
 class Inn(Shop):
     default_name = "inn"
@@ -35,7 +42,6 @@ class Inn(Shop):
         super().__init__(*args, **kwargs)
         self.traits.add("inn")
         self.room_price = room_price
-
 
 class WeaponShop(Shop):
     default_name = "weapon shop"
@@ -52,4 +58,6 @@ class WeaponShop(Shop):
 
         armor = game_object.Item(name="armor", location=self)
         armor.price = 150
+        armor.traits.add("armor")
+        armor.damage_reduction = 10
         armor.owner = self.shopkeeper

@@ -82,10 +82,10 @@ class Posture:
 
     def get_summary(self, viewer=None):
         from actor import Humanoid
-        prefix = ""
+        prefix = "( )"
         if isinstance(viewer, Humanoid):
             if viewer.stance == self or viewer.guard == self:
-                prefix = "* "
+                prefix = "(*)"
         out = [prefix + self.get_name(viewer)]
         out.extend(self.get_summary_lines(viewer))
         return "\n".join(out)

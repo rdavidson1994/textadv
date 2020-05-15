@@ -123,6 +123,10 @@ class Random(World):
             )
             for i in range(town_n)
         ]
+
+        for i in range(20):
+            testing_shopkeeper_agent = agent.ShopkeeperAgent.in_world(world_map)
+
         self.schedule.run_game(250 * day)
 
         self.actor = make_player(

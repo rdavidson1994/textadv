@@ -445,6 +445,30 @@ class Eat(mixins.HeldTarget, SingleTargetAction):
         self.target.vanish()
 
 
+class WearArmor(mixins.HeldTarget, mixins.ItemTarget, SingleTargetAction):
+    synonyms = ["wear", "equip"]
+
+    def check_traits(self):
+        if "armor" not in self.target.traits:
+            return False, "That item is not armor"
+        return super().check_traits()
+
+    def affect_game(self):
+        self.actor.armor = self.target
+
+
+class RemoveArmor(ZeroTargetAction):
+    synonyms = ["unequip", "doff", "remove"]
+
+    def check_geometry(self):
+        if self.actor.armor is None:
+            return False, "You aren't wearing any armor"
+        return super().check_geometry()
+
+    def affect_game(self):
+        self.actor.armor = None
+
+
 class Take(mixins.ItemTarget, SingleTargetAction):
     synonyms = ["take", "get", "pick up", "grab", ]
 
@@ -562,7 +586,7 @@ class WeaponStrike(mixins.HeldTool, ToolAction):
             damage_type = "blunt"
             damage_mult = 1
         amt = self.actor.get_melee_damage(self.tool) * damage_mult
-        self.target.take_damage(amt, damage_type)
+        self.target.take_damage(amt, damage_type, perpetrator=self.actor)
 
 
 class AssumePosture(ZeroTargetAction):
@@ -738,6 +762,7 @@ class RentInnRoom(SingleTargetAction):
             return False, "This isn't an inn."
         elif inn.room_price > self.actor.money:
             return False, "You can't afford to stay here."
+
         else:
             return super().check_geometry()
 

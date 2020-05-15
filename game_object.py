@@ -112,7 +112,7 @@ class Thing:
                 # line_of_sight will throw errors on targets outside location
                 sub.hear_announcement(action)
 
-    def take_damage(self, amt, damage_type):
+    def take_damage(self, amt, damage_type, perpetrator=None):
         pass
 
     def get_coordinates(self, viewing_location):
@@ -269,6 +269,7 @@ class Thing:
 class Item(Thing):
     def __init__(self, *args, **kwargs):
         Thing.__init__(self, *args, **kwargs)
+        self.damage_reduction = 0
         self.traits.add("item")
 
     def __repr__(self):
@@ -535,7 +536,7 @@ class PortalEdge:
     def get_relative_direction(self, viewer):
         """Returns which way the exit points, relative to a given location
         arg viewerLocation: Which location you are looking at the exit from.
-        return: A string ('n','s','e','w','u','d') represnting which
+        return: A string ('n','s','e','w','u','d') representing which
          direction the exit faces.
         """
         if viewer.location == self.source.location:
@@ -543,7 +544,9 @@ class PortalEdge:
         if viewer.location == self.target.location:
             return self.source_direction
         else:
-            raise errors.MisplacedViewer
+            return self.source_direction
+            # raise errors.MisplacedViewer
+            # Can't actuall raise this error, causes landmark problems
 
     def set_site(self, site, site_exit):
         self.site = site

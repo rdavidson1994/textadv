@@ -62,7 +62,7 @@ class Shock(Spell, SingleTargetAction):
     mana_cost = 25
 
     def affect_game(self):
-        self.target.take_damage(randint(75, 125), "lightning")
+        self.target.take_damage(randint(75, 125), "lightning", perpetrator=self.actor)
 
 
 class Blade(Spell, SingleTargetAction):
@@ -70,7 +70,7 @@ class Blade(Spell, SingleTargetAction):
     mana_cost = 30
 
     def affect_game(self):
-        self.target.take_damage(randint(75, 125), "sharp")
+        self.target.take_damage(randint(75, 125), "sharp", perpetrator=self.actor)
 
 
 class Knock(Spell, SingleTargetAction):
@@ -78,7 +78,7 @@ class Knock(Spell, SingleTargetAction):
     mana_cost = 30
 
     def affect_game(self):
-        self.target.take_damage(randint(50, 100), "blunt")
+        self.target.take_damage(randint(50, 100), "blunt", perpetrator=self.actor)
 
 
 class AOESpell(Spell, ZeroTargetAction):
@@ -108,7 +108,7 @@ class Fireball(AOESpell):
 
     def spell_effect(self, other):
         damage = randint(50, 100)
-        other.take_damage(damage, "fire")
+        other.take_damage(damage, "fire", perpetrator=self.actor)
 
 
 class ShockWave(AOESpell):
@@ -117,7 +117,7 @@ class ShockWave(AOESpell):
 
     def spell_effect(self, other):
         damage = randint(30, 75)
-        other.take_damage(damage, "blunt")
+        other.take_damage(damage, "blunt", perpetrator=self.actor)
 
 
 def get_random_spell():

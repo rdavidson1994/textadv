@@ -1,3 +1,5 @@
+from collections import Counter
+
 import math
 from random import choice, random, shuffle
 from typing import List
@@ -13,6 +15,7 @@ import dungeonrooms
 import errors
 import game_object
 import namemaker
+import shopkeeper
 import sites
 import posture
 from field import NuisanceEncounters
@@ -40,6 +43,7 @@ class WorldAgent(actor.Actor):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.killer = None
         self.ai = self.create_ai()
         assert self.ai is not None
         self.fields = []
@@ -108,8 +112,9 @@ class Town(WorldAgent):
             landmark_name=self.name_object+"village",
             agent=self,
         )
-        self.site.add_morph(sites.TownBuildingMorph(building.WeaponShop))
-        self.site.add_morph(sites.TownBuildingMorph(building.Inn))
+        # # Removing the hardcoded towns for now
+        # self.site.add_morph(sites.TownBuildingMorph(building.WeaponShop))
+        # self.site.add_morph(sites.TownBuildingMorph(building.Inn))
         self.traits.add("town")
         self.enemy_priority = {}
         self.last_attacks = {}
@@ -124,7 +129,7 @@ class Town(WorldAgent):
 
     def worst_problem(self):
         try:
-            return max(self.enemy_priority, key=self.enemy_priority.get)
+            return max((e for e in self.enemy_priority if e.alive), key=self.enemy_priority.get)
         except ValueError:
             return None
 
@@ -186,19 +191,47 @@ class Town(WorldAgent):
             self.destroyed = True
             return
 
+    def die(self):
+        self.destroyed = True
+        self.site.die()
+
 
 class SubordinatePopulation(Population):
     def __init__(self, agent):
         super().__init__()
+        self.destroyed = False
         self.agent = agent
+        self.player_responsible_for_destruction = None
+
+    def expel(self):
+        self.agent.change_site(None)
 
     def build_actors(self):
         self.actors = self.agent.build_actors()
 
+    def refresh(self):
+        self.agent.refresh_population()
+
     def hide_actors(self):
-        super().hide_actors()
-        if all(not actor.alive for actor in self.actors):
+        at_least_one_fighter = False
+        for a in self.actors:
+            if a.alive and a.awake and getattr(a.ai, "morale_level", "fight") == "fight":
+                at_least_one_fighter = True
+                break
+
+        if at_least_one_fighter:
+            super().hide_actors()
+        else:
+            # We're about to disband, so calculate whoever did the most damage to our dudes,
+            # And give them credit for beating us
+            best_attacker_counter = sum((a.damage_log for a in self.actors), Counter())
+            best_attacker_list = best_attacker_counter.most_common(1)
+            if len(best_attacker_list) != 0:
+                attacker, _damage = best_attacker_list[0]
+                self.agent.killer = attacker
+            super().hide_actors()
             self.agent.die()
+            self.destroyed = True
 
 
 class PopulationAgent(WorldAgent):
@@ -207,10 +240,15 @@ class PopulationAgent(WorldAgent):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.destroyed = False
         self.population = SubordinatePopulation(self)
+
+    def refresh_population(self):
+        pass
 
     def die(self):
         print(f"{self.name} were eradicated.")
+        self.alive = False
         self.vanish()
 
     def vanish(self):
@@ -223,14 +261,13 @@ class PopulationAgent(WorldAgent):
             self.destroy_fields()
             if self.population.rendered:
                 self.population.hide_actors()
-        self.site = site
+        self.site = site  # move this up somehow
         if site is not None:
             site.add_population(self.population)
             self.create_fields()
 
     def build_actors(self, number=None) -> List[actor.Actor]:
-        pass
-
+        return []
 
 
 class ShopType:
@@ -240,25 +277,42 @@ class ShopType:
         self.building_type = building_type
 
 
-
 class ShopkeeperAgent(PopulationAgent):
     morph_type = None
     town = None
     shop_types = [
         ShopType("inn", "innkeeper", building.Inn),
         ShopType("weapon shop", "weaponsmith", building.WeaponShop),
+        ShopType("temple", "monk", building.Temple)
     ]
+
+    def shopkeeper_location_function(self, region):
+        shop = self.get_building()
+        if shop is not None and region.has_location(shop):
+            return shop
+        else:
+            return region.arbitrary_location()
 
     def __init__(self, *args, shop_type, town, **kwargs):
         super().__init__(*args, **kwargs)
         self.shop_type = shop_type
+        self.person = shopkeeper.Person(name=self.name_object)
+        self.population.location_functions[self.person] = self.shopkeeper_location_function
         self.town = town
+        self.population.is_town_friendly = True
+        self.building_morph = None
+
+    def get_building(self):
+        if self.building_morph is not None and self.building_morph.has_building():
+            return self.building_morph.get_building()
+        else:
+            return None
 
     @classmethod
     def in_world(cls, world_map):
         shop_type = choice(cls.shop_types)
         return cls(
-            name=namemaker.make_name()+","+shop_type.shopkeeper_name,
+            name=namemaker.make_name().add(shop_type.shopkeeper_name, "{}, {}"),
             location=world_map,
             coordinates=world_map.random_point(),
             shop_type=shop_type,
@@ -266,35 +320,59 @@ class ShopkeeperAgent(PopulationAgent):
         )
 
     def town_utility(self, town):
-        crowding = len(town.populations)+1
-        distance = self.location.distance(self, town.get_name())
-        return -town.unrest - distance - crowding
+        if town.destroyed:
+            return -float("inf")
+        crowding = len(town.site.populations)+1
+        distance = self.location.distance(self, town)
+        return -(town.unrest + distance + crowding)
 
     def find_town(self):
-        towns = self.location.things_with_trait(
+        town_agents = self.location.things_with_trait(
             "town", self.coordinates, 30
         )
-        if not towns:
+        if not town_agents:
             return None
-        return max(towns, key=self.town_utility)
+        return max(town_agents, key=self.town_utility)
 
+    def build_actors(self, number=None) -> List[actor.Actor]:
+        return [self.person]
 
+    def move_towns(self, new_town):
+        self.town = new_town
+        print(f"{self.name} moved to {self.town.get_name()}")
+        self.change_site(self.town.site)
+        self.building_morph = sites.TownBuildingMorph(
+            self.shop_type.building_type,
+            self.person,
+        )
+        self.town.site.add_morph(
+            self.building_morph
+        )
 
     def take_turn(self):
         if self.town is None:
-            self.town = self.find_town()
-            if not self.town:
+            town = self.find_town()
+            if not town:
                 print(f"{self.name} gave up on being a {self.shop_type.shopkeeper_name}")
                 self.vanish()
             else:
-                print(f"{self.name} moved to {self.town.landmark.name}")
+                self.move_towns(town)
             return
+
+        best_town = self.find_town()
+        if (
+            best_town is not None
+            and best_town != self.town
+            and self.town_utility(best_town) > self.town_utility(self.town) + 5
+        ):
+            self.move_towns(best_town)
 
 
 
 class NuisanceAI(WaitingAI):
     def is_hostile_to(self, other):
         return other != self
+
 
 class ExternalNuisance(PopulationAgent):
     morph_type = None
@@ -376,7 +454,7 @@ class ExternalNuisance(PopulationAgent):
             radius=10,
         )
         candidate_sites = [
-            site for site in nearby_sites if site.allows_population(self)
+            site for site in nearby_sites if site.allows_population(self.population)
         ]
         if not candidate_sites:
             print(f"Finding no suitable home, {self.name} disbanded")

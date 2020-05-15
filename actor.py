@@ -10,6 +10,7 @@ from logging import debug
 from random import random, randint, triangular, choice
 from name_object import Name
 from posture import Stance, Guard, BonusType, Posture
+from collections import Counter
 
 
 class Actor(game_object.Thing):
@@ -18,6 +19,8 @@ class Actor(game_object.Thing):
         self.physical = False
         self.awake = True
         self.alive = True
+        self.armor = None
+        self.damage_log = Counter()  # actors to amounts
         self.traits.update({"actor", "listener"})
         self.scheduled_event = None
         self.ai = None
@@ -142,7 +145,36 @@ class Person(Actor):
         self.body.max_mana += amt
         self.set_body_timer()
 
-    def take_damage(self, amt, damage_type):
+    def most_damaging_opponent(self):
+        most_damage_list = self.damage_log.most_common(1)
+        if len(most_damage_list) != 0:
+            return most_damage_list[0]
+        else:
+            return None
+
+    def decay_damage_log(self):
+        if not self.alive:
+            # Keep the damage log fixed once the actor dies,
+            # So that we can determine who killed them.
+            return
+        to_delete = []
+        for attacker in self.damage_log:
+            if self.damage_log[attacker] <= 3:
+                to_delete.append(attacker)
+            else:
+                self.damage_log[attacker] /= 3
+        for attacker in to_delete:
+            del self.damage_log[attacker]
+        self.schedule.set_timer(self, 600000, callback=self.decay_damage_log)
+
+    def take_damage(self, amt, damage_type, perpetrator=None):
+        if perpetrator is not None:
+            # Later, if the perpetrator has a commander, we can give them partial credit
+            self.damage_log[perpetrator] += int(amt)
+            self.schedule.set_timer(self, 600000, callback=self.decay_damage_log)
+        if self.armor is not None:
+            damage_reduction = getattr(self.armor, "damage_reduction", 0)
+            amt -= damage_reduction
         self.body.take_damage(amt, damage_type)
 
     def notice_damage(self, amt, typ):

@@ -151,6 +151,7 @@ class Body:
                 self.ko_time = 0
                 if not self.owner.awake:
                     self.owner.wake_up()
+
         if self.bleeding_damage:
             needs_update = True
             self.take_damage(self.bleeding_damage, "bleed")
@@ -158,14 +159,17 @@ class Body:
                 self.bleeding_damage -= 1
             if self.bleeding_damage <= 0:
                 self.bleeding_damage = 0
+
         if self.short_fatigue:
             needs_update = True
             self.short_fatigue -= 6
             if self.short_fatigue <= 0:
                 self.short_fatigue = 0
+
         if self.mana < self.max_mana:
             needs_update = True
             self.gain_mana(self.mana_regen_rate)
+
         if needs_update:
             self.owner.set_body_timer()
         else:
