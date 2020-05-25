@@ -17,8 +17,9 @@ from direction import random as random_direction
 from wide import Overworld
 import population
 
+day = 1000 * 60 * 60 * 24
 
-def make_player(location, coordinates, landmarks=set(), use_web_output=False, postures=()):
+def make_player(location, coordinates, landmarks=(), use_web_output=False, postures=()):
     john = actor.Hero(
         location=location,
         name="john",
@@ -79,21 +80,36 @@ class SiteTest(World):
             width=10,
             height=10,
         )
-        site_type.at_point(
+        self.site = site_type.at_point(
             location=self.overworld,
-            coordinates=(5,5),
+            coordinates=(5, 5),
             direction=down,
             landmark_name=name_object.Name("test site"),
         )
-        self.actor = make_player(
+
+
+class PopulationTest(SiteTest):
+    def __init__(self, site_type, population_type, save_manager=None):
+        super().__init__(site_type, save_manager)
+        self.town = agent.Town(
+            name=name_object.Name("test town"),
             location=self.overworld,
-            coordinates=(5,5),
+            coordinates=(5, 6),
         )
+        self.population = population_type(
+            name=name_object.Name("test population"),
+            location=self.overworld,
+            coordinates=(5, 5),
+            target=self.town,
+        )
+        # give time for the population to occupy the site
+        # (and reveal bugs if they don't)
+        self.schedule.run_game(2 * day)
+
 
 class Random(World):
     def __init__(self, use_web_output=False, save_manager=None):
         super().__init__(save_manager=save_manager)
-        day = 1000 * 60 * 60 * 24
         self.schedule = schedule.Schedule()
         world_map = wide.Overworld(
             sched=self.schedule,

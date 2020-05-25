@@ -5,6 +5,7 @@ import game_object
 import agent
 import population
 import environment
+import typing
 import building
 
 
@@ -80,6 +81,7 @@ class Person(actor.Person):
         super().__init__(*args, **kwargs)
         self.ai = ShopkeeperAI(self)
         self.traits.add("merchant")
+        self.shop = None
 
 
 if __name__ == "__main__":

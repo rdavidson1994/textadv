@@ -196,55 +196,56 @@ class Town(WorldAgent):
         self.site.die()
 
 
-class SubordinatePopulation(Population):
-    def __init__(self, agent):
-        super().__init__()
-        self.destroyed = False
-        self.agent = agent
-        self.player_responsible_for_destruction = None
-
-    def expel(self):
-        self.agent.change_site(None)
-
-    def build_actors(self):
-        self.actors = self.agent.build_actors()
-
-    def refresh(self):
-        self.agent.refresh_population()
-
-    def hide_actors(self):
-        at_least_one_fighter = False
-        for a in self.actors:
-            if a.alive and a.awake and getattr(a.ai, "morale_level", "fight") == "fight":
-                at_least_one_fighter = True
-                break
-
-        if at_least_one_fighter:
-            super().hide_actors()
-        else:
-            # We're about to disband, so calculate whoever did the most damage to our dudes,
-            # And give them credit for beating us
-            best_attacker_counter = sum((a.damage_log for a in self.actors), Counter())
-            best_attacker_list = best_attacker_counter.most_common(1)
-            if len(best_attacker_list) != 0:
-                attacker, _damage = best_attacker_list[0]
-                self.agent.killer = attacker
-            super().hide_actors()
-            self.agent.die()
-            self.destroyed = True
-
-
 class PopulationAgent(WorldAgent):
-    site = None
-    population = None
+    built = False
+    rendered = False
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        self.is_town_friendly = False
+        self.built = False
+        self.site = None
+        self.rendered = False
+        self.actors = []
+        self.location_functions = {}
         self.destroyed = False
-        self.population = SubordinatePopulation(self)
+        super().__init__(*args, **kwargs)
+
+    def cull_absent_actors(self):
+        assert self.rendered
+        # Filter out dead and absent actors
+        self.actors = [a for a in self.actors if a.location is not None]
+        for actor in self.actors:
+            actor.vanish()
+        self.rendered = False
+
+    def get_location(self, actor, region):
+        try:
+            return self.location_functions[actor](region)
+        except KeyError:
+            return region.arbitrary_location()
+
+    def refresh(self):
+        # Hook for populations to change things up between player visits.
+        pass
+
+    def render(self, region):
+        if not self.built:
+            self.build()
+            self.built = True
+        if not self.rendered:
+            self.refresh()
+            self.show(region)
+        self.rendered = True
+
+    def allows_other(self, population):
+        return False
+
+    def show(self, region):
+        for actor in self.actors:
+            actor.materialize(self.get_location(actor, region))
 
     def refresh_population(self):
-        pass
+        self.refresh()
 
     def die(self):
         print(f"{self.name} were eradicated.")
@@ -257,17 +258,41 @@ class PopulationAgent(WorldAgent):
 
     def change_site(self, site):
         if self.site:
-            self.site.remove_population(self.population)
+            self.site.remove_population(self)
             self.destroy_fields()
-            if self.population.rendered:
-                self.population.hide_actors()
-        self.site = site  # move this up somehow
+            if self.rendered:
+                self.hide_actors()
+        self.site = site
         if site is not None:
-            site.add_population(self.population)
+            site.add_population(self)
             self.create_fields()
 
-    def build_actors(self, number=None) -> List[actor.Actor]:
-        return []
+    def build(self):
+        pass
+
+    def expel(self):
+        self.change_site(None)
+
+    def hide_actors(self):
+        at_least_one_fighter = False
+        for a in self.actors:
+            if a.alive and a.awake and getattr(a.ai, "morale_level", "fight") == "fight":
+                at_least_one_fighter = True
+                break
+
+        if at_least_one_fighter:
+            self.cull_absent_actors()
+        else:
+            # We're about to disband, so calculate whoever did the most damage to our dudes,
+            # And give them credit for beating us
+            best_attacker_counter = sum((a.damage_log for a in self.actors), Counter())
+            best_attacker_list = best_attacker_counter.most_common(1)
+            if len(best_attacker_list) != 0:
+                attacker, _damage = best_attacker_list[0]
+                self.killer = attacker
+            self.cull_absent_actors()
+            self.die()
+            self.destroyed = True
 
 
 class ShopType:
@@ -297,9 +322,10 @@ class ShopkeeperAgent(PopulationAgent):
         super().__init__(*args, **kwargs)
         self.shop_type = shop_type
         self.person = shopkeeper.Person(name=self.name_object)
-        self.population.location_functions[self.person] = self.shopkeeper_location_function
+        self.actors = [self.person]
+        self.location_functions[self.person] = self.shopkeeper_location_function
         self.town = town
-        self.population.is_town_friendly = True
+        self.is_town_friendly = True
         self.building_morph = None
 
     def get_building(self):
@@ -334,9 +360,6 @@ class ShopkeeperAgent(PopulationAgent):
             return None
         return max(town_agents, key=self.town_utility)
 
-    def build_actors(self, number=None) -> List[actor.Actor]:
-        return [self.person]
-
     def move_towns(self, new_town):
         self.town = new_town
         print(f"{self.name} moved to {self.town.get_name()}")
@@ -366,7 +389,6 @@ class ShopkeeperAgent(PopulationAgent):
             and self.town_utility(best_town) > self.town_utility(self.town) + 5
         ):
             self.move_towns(best_town)
-
 
 
 class NuisanceAI(WaitingAI):
@@ -399,12 +421,17 @@ class ExternalNuisance(PopulationAgent):
     def wants_to_morph(self, site):
         return not site.has_morph_type(self.morph_type)
 
+    def create_random_creatures(self, amount=None):
+        return []
+
     def encounter_quantity(self):
         return 3
 
+    def build(self):
+        self.actors.extend(self.create_random_creatures())
+
     def populate_encounter(self, encounter_pocket):
-        # TODO: un-hardcode the AI
-        for actor in self.build_actors(self.encounter_quantity()):
+        for actor in self.create_random_creatures(self.encounter_quantity()):
             encounter_pocket.add_actor(actor)
             actor.materialize(encounter_pocket)
             actor.ai = ai.WaitingMonsterAI(actor)
@@ -454,7 +481,7 @@ class ExternalNuisance(PopulationAgent):
             radius=10,
         )
         candidate_sites = [
-            site for site in nearby_sites if site.allows_population(self.population)
+            site for site in nearby_sites if site.allows_population(self)
         ]
         if not candidate_sites:
             print(f"Finding no suitable home, {self.name} disbanded")
@@ -509,14 +536,10 @@ class BanditGroup(ExternalNuisance):
     member_name = "gang"
     morph_type = sites.BanditHabitation
 
-    def build_actors(self, number=None):
-        actors = []
-        if number is None:
-            number = self.number_of_members
-        for m in range(number):
+    def build(self):
+        for m in range(self.number_of_members):
             bandit = self.create_bandit()
-            actors.append(bandit)
-        return actors
+            self.actors.append(bandit)
 
     def encounter_quantity(self):
         return max(1, min(5, math.floor(self.power)))
@@ -554,7 +577,6 @@ class BanditGroup(ExternalNuisance):
             bandit.learn_posture(p)
             bandit.adopt_posture(p)
 
-
         weapon = game_object.Item(
             location=bandit,
             name=Name(weapon_kind)
@@ -567,6 +589,9 @@ class BanditGroup(ExternalNuisance):
 class GhoulHorde(ExternalNuisance):
     member_name = "ghouls"
     morph_type = sites.GhoulHabitation
+    adjectives = [
+        "peeling", "thin", "hairy", "spotted", "bloated", "short",
+    ]
 
     def site_preference(self, site):
         # TODO: Better check for this
@@ -575,15 +600,12 @@ class GhoulHorde(ExternalNuisance):
         else:
             return 0
 
-    def build_actors(self, number=None):
-        adjectives = [
-            "peeling", "thin", "hairy", "spotted", "bloated", "short",
-        ]
-        if number is None:
-            number = len(adjectives)
-            shuffle(adjectives)
+    def create_random_creatures(self, amount=None):
+        if amount is None:
+            amount = len(self.adjectives)
+        shuffle(self.adjectives)
         actors = []
-        for adjective in adjectives[:number]:
+        for adjective in self.adjectives[:amount]:
             ghoul = actor.Person(name=Name(adjective + " ghoul"))
             ai.WanderingMonsterAI(ghoul)
             ghoul.body = body.UndeadBody(ghoul)
@@ -626,20 +648,11 @@ class GiantAntSwarm(ExternalNuisance):
         except errors.MissingNode:
             return region.arbitrary_location()
 
-    def build_actors(self, number=None):
-        # TODO: Link enemy number to power
-        actors = []
-        queen = None
-        if number is None:
-            number = 7
-            queen = actor.AntQueen(
-                location=None,
-                name=Name("giant ant queen")
-            )
-            actors.append(queen)
-            self.population.location_functions[queen] = self.boss_location_function
-
-        for _ in range(number):
+    def create_random_creatures(self, amount=None):
+        if amount is None:
+            amount = max(7, min(25, int(self.power)))
+        out = []
+        for _ in range(amount):
             ant = actor.Person(
                 location=None,
                 name=Name("giant ant")
@@ -648,11 +661,20 @@ class GiantAntSwarm(ExternalNuisance):
             ant.damage_mult = 2
             ant.combat_skill = 30
             ant.ai = ai.WanderingMonsterAI(ant)
-            actors.append(ant)
-            if queen:
-                queen.ants.append(ant)
-        return actors
+            out.append(ant)
+        return out
 
+    def build(self):
+        queen = actor.AntQueen(
+            location=None,
+            name=Name("giant ant queen")
+        )
+        self.actors.append(queen)
+        self.location_functions[queen] = self.boss_location_function
+
+        for ant in self.create_random_creatures():
+            queen.ants.append(ant)
+            self.actors.append(ant)
 
 class KoboldGroup(ExternalNuisance):
     member_name = "kobolds"
@@ -672,32 +694,35 @@ class KoboldGroup(ExternalNuisance):
         except errors.MissingNode:
             return region.arbitrary_location()
 
-    def build_actors(self, number=None):
-        # TODO: Refactor all "number != None" branches into a "make_actor" branch
-        actors = []
-        if number is None:
-            number = len(self.adjectives)
+    def create_random_creatures(self, amount=None):
+        out = []
+        if amount is None:
+            amount = len(self.adjectives)
             shuffle(self.adjectives)
-        for adjective in self.adjectives[:number]:
+        for adjective in self.adjectives[:amount]:
             kobold = actor.Humanoid(
                 location=None,
                 name=Name(adjective) + "kobold"
             )
             kobold.ai = ai.SquadAI(kobold)
             kobold.traits.add("kobold")
-            actors.append(kobold)
+            out.append(kobold)
+        return out
+
+    def build(self):
+        for kobold in self.create_random_creatures():
+            self.actors.append(kobold)
 
         boss = actor.Person(
             location=None,
             name=Name("kobold leader"),
         )
         boss.traits.add("kobold")
-
-        actors.append(boss)
         boss.ai = ai.WanderingMonsterAI(boss)
         boss.combat_skill = 75
         sword = game_object.Item(location=boss, name=Name("crude sword"))
         sword.damage_type = "sharp"
         sword.damage_mult = 6
-        self.population.location_functions[boss] = self.boss_location_function
-        return actors
+        self.location_functions[boss] = self.boss_location_function
+        self.actors.append(boss)
+
