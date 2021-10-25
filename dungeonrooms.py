@@ -385,7 +385,6 @@ class Prison(GeneratedRoom):
                          names=["cage", "iron cage", "padlock", "lock"],
                          key=key, )
         self.decor_dict["cage"] = self.cage
-        self.cage.locked = True
         prisoner = Prisoner(name=NameMaker().create_word(),
                             location=self,
                             sched=self.schedule)

@@ -29,7 +29,12 @@ class Shop(Building):
                 name=make_name().add(self.clerk_title, "{}, {}"),
                 location=self,
             )
+            
         self.shopkeeper.shop = self
+    
+    def become_abandonned(self):
+        self.name = self.name + " (abandonned)"
+        self.door.source.name += " (abandonned)"
 
 
 class Temple(Shop):

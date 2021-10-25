@@ -4,6 +4,7 @@ import actor
 import ai
 import body
 from name_object import Name
+from typing import Optional
 from dungeonrooms import (
     TreasureRoom, Barracks, Kitchen, MeatChamber, MessHall, Prison, Apothecary,
     BossQuarters, KoboldCaveEntrance, BanditBarracks, BanditMess, BanditKitchen,
@@ -16,7 +17,7 @@ from region import TownRegion
 class Site:
     def __init__(self, sched=None, entrance_portal=None, **kwargs):
         self.schedule = sched
-        self.landmark = None
+        self.landmark : Optional[game_object.Landmark] = None
         if self.schedule is None:
             self.schedule = entrance_portal.schedule
         self.morphs = []
@@ -84,6 +85,7 @@ class Site:
         return self.morphs[self.unused_morph_index:]
 
     def update_region(self):
+        print(self.morphs)
         if not self.region:
             self.construct_base_region()
         
@@ -123,21 +125,44 @@ class TownSite(Site):
             self.entrance_portal, self.schedule, self.agent
         )
 
+class AbandonMorph(Morph):
+    def __init__(self, building_morph):
+        self.building_morph = building_morph
+    
+    def alter_region(self, region):
+        # print(f"Applying abandon morph for building morph {self.building_morph}")
+        self.building_morph.become_abandonned()
+        return region
 
 class TownBuildingMorph(Morph):
     def __init__(self, building_factory, shopkeeper_actor=None):
         self.building_factory = building_factory
         self.building = None
         self.shopkeeper_actor = shopkeeper_actor
+        self.abandon = False
+    
+    def become_abandonned(self):
+        # print(f"Attempting to abandon {self}")
+        if self.building:
+            # print("---- Immediately applying abandon effect")
+            self.building.become_abandonned()
+        else:
+            # print("---- Can't apply yet, marking for later")
+            self.abandon = True
 
     def alter_region(self, region):
+        # print(f"Applying building morph {self}")
         assert isinstance(region, TownRegion)
         self.building = self.building_factory(
             region.main_location,
             sched=region.schedule,
             shopkeeper_actor=self.shopkeeper_actor,
         )
+        if self.abandon:
+            # print("---- building morph {self} is abandoned, applying abandon effect")
+            self.building.become_abandonned()
         region.add_room(self.building)
+        # print(f"Done applying building morph {self}")
         return region
 
     def has_building(self):
@@ -146,6 +171,10 @@ class TownBuildingMorph(Morph):
     def get_building(self):
         assert self.has_building()
         return self.building
+    
+    def get_abandon_morph(self):
+        return AbandonMorph(self)
+
 
 
 class RegionSite(Site):

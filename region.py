@@ -1,6 +1,7 @@
 import random
 from random import random, randint, sample, shuffle, choice
-
+from typing import *
+from collections.abc import Iterable as AbcIterable
 import errors
 import location
 from direction import north, south, east, west
@@ -20,8 +21,8 @@ logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 directions = [north, south, east, west]
 
 
-class InfiniteDeck:
-    def __init__(self, lst):
+class InfiniteDeck(AbcIterable):
+    def __init__(self, lst : Sequence[Type[dungeonrooms.GeneratedRoom]]):
         self.lst = lst
 
     def __iter__(self):
@@ -331,6 +332,9 @@ class UndergroundRegion:
     def has_location(self, location_):
         return any((node.location == location_ for node in self.node_list))
 
+RoomSeq = Sequence[Type[dungeonrooms.GeneratedRoom]]
+RoomIter = Iterable[Type[dungeonrooms.GeneratedRoom]]
+
 
 class Caves(UndergroundRegion):
     enemy_number = 0
@@ -408,13 +412,14 @@ class Caves(UndergroundRegion):
     def get_rally_location(self):
         return self.get_rally_node().location
 
-    def build_locations(self, essential=None, optional=None, filler=None):
+    def build_locations(self, essential : RoomSeq, optional : RoomSeq, filler : RoomSeq):
         self.unbuilt_nodes = list(self.node_list)
         # self.unbuilt_nodes = [n for n in self.node_list if not n.is_entrance()]
-        essential_deck = list(essential)
-        optional_deck = list(optional)
-        filler_deck = InfiniteDeck(filler)
+        essential_deck : RoomIter = list(essential)
+        optional_deck : RoomIter = list(optional)
+        filler_deck : RoomIter = InfiniteDeck(filler)
         shuffle(optional_deck)
+        deck : RoomIter
         # the essential deck does not get shuffled
         for deck in (essential_deck, optional_deck, filler_deck):
             for room_type in deck:
@@ -656,7 +661,10 @@ if __name__ == "__main__":
     john = actor.Hero(start_location, name="john", sched=my_schedule)
     john.change_location(start_location)
     john.view_location()
-    john.ai.visited_locations = {john.location}
+    # TODO: Can't add this assert (to pass type check) because of
+    # a circular reference
+    # assert(isinstance(john.ai, Parser))
+    john.ai.visited_locations = {john.location} # type: ignore
     john.known_landmarks = {john.location.landmark1,
                             john.location.landmark2, }
     john.spells_known = {spells.Shock, spells.Sleep, spells.Fireball}

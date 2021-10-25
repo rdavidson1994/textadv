@@ -37,4 +37,4 @@ class Town(Test):
         super().__init__()
         desc = "You are inside the guardhouse."
         self.guardhouse = location.Location(description=desc)
-        self.portal = game_object.Door(self.street, self.house)
+        self.portal = game_object.Door(self.street, self.guardhouse)

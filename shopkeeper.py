@@ -1,3 +1,4 @@
+from location import Location
 import ai
 import actor
 import action
@@ -7,6 +8,7 @@ import population
 import environment
 import typing
 import building
+from typing import Optional
 
 
 class ShopkeeperAI(ai.PeacefulAI):
@@ -81,7 +83,7 @@ class Person(actor.Person):
         super().__init__(*args, **kwargs)
         self.ai = ShopkeeperAI(self)
         self.traits.add("merchant")
-        self.shop = None
+        self.shop : Optional[Location] = None
 
 
 if __name__ == "__main__":

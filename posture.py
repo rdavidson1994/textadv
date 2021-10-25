@@ -39,9 +39,9 @@ class Posture:
         self.multipliers = dict(multipliers)
         self.name = name
         self.is_default = False
-        self.easy_parry_effect = None
+        self.easy_parry_effect : Optional[Posture] = None
         self.easy_parry_duration = 0
-        self.near_hit_effect = None
+        self.near_hit_effect : Optional[Posture] = None
         self.near_hit_duration = 0
         self.is_default = is_default
 

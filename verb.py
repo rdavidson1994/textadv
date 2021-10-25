@@ -1,5 +1,6 @@
 import re
 import direction
+from typing import cast, Any
 
 
 def group_from_list(lst, capture=False):
@@ -215,7 +216,9 @@ class Verb:
                     break
 
         if match:
-            return match.groups(), sig, quality
+            # Pyright complains sig may be unbound,
+            # but match cannot be true in this case
+            return match.groups(), cast(Any, sig), quality # type: ignore
         else:
             return None, None, quality
 

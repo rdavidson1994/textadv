@@ -23,6 +23,7 @@ Grief eaters - they magically stay alive by consuming human remains from tombs, 
 Advanced ghoul infestations (and other desecrations) lead to wraith attacks throughout the surrounding area.
 
 ### Kobolds
+???
 
 ### Bandits
 Origins:

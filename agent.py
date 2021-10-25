@@ -2,7 +2,7 @@ from collections import Counter
 
 import math
 from random import choice, random, shuffle
-from typing import List
+from typing import List, Dict, cast, Optional, Any
 
 import action
 import agentactions
@@ -116,7 +116,7 @@ class Town(WorldAgent):
         # self.site.add_morph(sites.TownBuildingMorph(building.WeaponShop))
         # self.site.add_morph(sites.TownBuildingMorph(building.Inn))
         self.traits.add("town")
-        self.enemy_priority = {}
+        self.enemy_priority : Dict[WorldAgent, int] = {}
         self.last_attacks = {}
 
     def suffer_attack(self, unrest, source):
@@ -127,9 +127,12 @@ class Town(WorldAgent):
             self.enemy_priority[source] = unrest
         self.last_attacks[source] = self.schedule.current_time
 
-    def worst_problem(self):
+    def worst_problem(self) -> Optional[WorldAgent]:
         try:
-            return max((e for e in self.enemy_priority if e.alive), key=self.enemy_priority.get)
+            return max(
+                (e for e in self.enemy_priority if e.alive),
+                key= lambda x : self.enemy_priority.get(x, 0)
+            )
         except ValueError:
             return None
 
@@ -145,7 +148,7 @@ class Town(WorldAgent):
 
     def take_turn(self):
         for agent in self.enemy_priority:
-            self.enemy_priority[agent] *= 0.9**(self.update_period / day)
+            new_priority = int(self.enemy_priority[agent] * 0.9**(self.update_period / day))
         if self.destroyed:
             return
 
@@ -361,13 +364,23 @@ class ShopkeeperAgent(PopulationAgent):
         return max(town_agents, key=self.town_utility)
 
     def move_towns(self, new_town):
+        
+        if self.town and self.building_morph:
+            self.town.site.add_morph(
+                self.building_morph.get_abandon_morph()
+            )
+
         self.town = new_town
         print(f"{self.name} moved to {self.town.get_name()}")
+
+
         self.change_site(self.town.site)
+
         self.building_morph = sites.TownBuildingMorph(
             self.shop_type.building_type,
             self.person,
         )
+
         self.town.site.add_morph(
             self.building_morph
         )
@@ -556,12 +569,12 @@ class BanditGroup(ExternalNuisance):
         if random() < 0.5:
             weapon_kind = "sword"
             damage_type = "sharp"
-            damage_mult = 4 + self.power / 5
+            damage_mult = 4 + int(self.power) // 5
             title = "bandit swordsman"
         else:
             weapon_kind = "mace"
             damage_type = "blunt"
-            damage_mult = 4 + self.power / 5
+            damage_mult = 4 + int(self.power) // 5
             title = "bandit maceman"
         given_name = namemaker.make_name()
         name_and_title = given_name.add(title, template="{}, {}")

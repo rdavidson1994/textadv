@@ -3,6 +3,7 @@ import errors
 from name_object import Name
 import logging
 import direction
+from typing import *
 from menu_wrap import menu_wrap
 
 debug = logging.debug
@@ -46,6 +47,8 @@ class Thing:
             self, location=None, name="", coordinates=None, other_names=(),
             sched=None, traits=(), names=(), *args, **kwargs
     ):
+        self.damage_type = "blunt"
+        self.damage_mult = 1
         self.physical = True
         self.trapping_item = None
         self.coordinates = coordinates
@@ -72,8 +75,8 @@ class Thing:
             self.name_object = Name(name)
         self.name = self.name_object.get_text()
         self.nearest_portal = None
-        self.owner = None
-        self.price = None
+        self.owner : Optional[Thing] = None
+        self.price : Optional[int] = None
 
     def get_identifier(self, viewer=None):
         return "the "+self.get_name(viewer)
@@ -345,7 +348,7 @@ class Cage(Thing):
     def free_prisoners(self):
         for prisoner in self.prisoners:
             prisoner.trapping_item = None
-        self.prisoners = []
+        self.prisoners = set()
 
 
 class PortalVertex(Thing):
@@ -355,6 +358,7 @@ class PortalVertex(Thing):
         self.traits.add("portal")
         self.edge = edge
         self.landmark = None
+        self.lock : Optional[Lock] = None
 
     def set_site(self, site):
         self.edge.set_site(site, site_exit=self)
@@ -562,8 +566,12 @@ class PortalEdge:
         self.set_vertex_location(0, new_location, new_coords)
 
 
+
+
 class Door(PortalEdge):
     def __init__(self, start, end, direct="random"):
+        self.start = start
+        self.end = end
         locations = (start, end)
         if direct == "random":
             direct = direction.random()

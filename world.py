@@ -12,6 +12,7 @@ import schedule
 import sites
 import spells
 import wide
+import parsing
 from direction import north, south, east, west, up, down
 from direction import random as random_direction
 from wide import Overworld
@@ -28,6 +29,7 @@ def make_player(location, coordinates, landmarks=(), use_web_output=False, postu
     for p in postures:
         john.learn_posture(p)
     my_parser = john.ai
+    assert(isinstance(my_parser, parsing.Parser))
     my_parser.web_output = use_web_output
     john.view_location()
     john.known_landmarks = set(landmarks)

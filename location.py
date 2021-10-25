@@ -1,11 +1,12 @@
+from typing import Optional
 from game_object import Thing, debug
-
 
 class Location(Thing):
     def __init__(self, description="", reg=None, *args, **kwargs):
+        from region import Node
         Thing.__init__(self, *args, **kwargs)
         self.reg = reg
-        self.map_node = None
+        self.map_node : Optional[Node] = None
         self.traits.add("location")
         self.description = description
 

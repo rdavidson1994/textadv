@@ -1,3 +1,4 @@
+from action import ActionListRoutine, Routine
 import math
 
 import game_object
@@ -6,6 +7,7 @@ import parsing
 import ai
 import schedule
 import errors
+from typing import *
 from logging import debug
 from random import random, randint, triangular, choice
 from name_object import Name
@@ -23,7 +25,7 @@ class Actor(game_object.Thing):
         self.damage_log = Counter()  # actors to amounts
         self.traits.update({"actor", "listener"})
         self.scheduled_event = None
-        self.ai = None
+        self.ai : Optional[ai.AI] = None
         self.actor_strategy_dict = dict()
         # self.action_queue = list()
         self.timer = 0
@@ -162,7 +164,7 @@ class Person(Actor):
             if self.damage_log[attacker] <= 3:
                 to_delete.append(attacker)
             else:
-                self.damage_log[attacker] /= 3
+                self.damage_log[attacker] //= 3
         for attacker in to_delete:
             del self.damage_log[attacker]
         self.schedule.set_timer(self, 600000, callback=self.decay_damage_log)
@@ -395,7 +397,7 @@ class Humanoid(Person):
         self.stance = Stance.get_default()
         self.guard = Guard.get_default()
         self.temporary_postures = {}
-        self.postures_known = {self.stance, self.guard}
+        self.postures_known : Set[Posture] = {self.stance, self.guard}
 
     def teach_posture(self, other: "Humanoid"):
         posture = choice([self.guard, self.stance])

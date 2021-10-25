@@ -1,7 +1,9 @@
 from random import betavariate, randint, random
 from math import floor, sqrt
 try:
-    from scipy.stats import norm
+    # Not worrying about the optional scipy dependency for now
+    raise ImportError
+    # from scipy.stats import norm
 except ImportError:
     #  on my work computer, scipy cannot be installed. This is a workaround.
     class norm:

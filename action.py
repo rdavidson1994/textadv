@@ -1,6 +1,7 @@
 import logging
 # logging.basicConfig(level=logging.DEBUG,format='%(message)s')
 from math import sqrt, floor
+from typing import Optional, cast
 
 import location
 import mixins
@@ -23,7 +24,7 @@ def match_action_to_string(actor, input_string):
 
 
 class ActionMeta(type):
-    def __init__(cls, name, bases, dct):
+    def __init__(cls: "Action", name, bases, dct):
         if cls.VerbClass and cls.synonyms and not cls.hidden:
             cls.verb = cls.VerbClass(cls)
 
@@ -31,6 +32,7 @@ class ActionMeta(type):
 
 
 class Action(metaclass=ActionMeta):
+    verb : Optional[Verb] = None
     VerbClass = StandardVerb
     hidden = False
     priority = 10
@@ -651,6 +653,9 @@ class VectorTravel(ZeroTargetAction):
     def __init__(self, *args, vector=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.vector = vector
+        if self.vector is None:
+            self.new_coordinates = None
+            return
         try:
             old_x, old_y = self.actor.coordinates
             # TypeError, if actor has no coordinates
@@ -797,7 +802,8 @@ class Routine:
     empty_reason = "That doesn't make sense."
 
     def __init__(self, actor, *target_list):
-        super().__init__(actor, *target_list)
+        # TODO: This "mixin" calling a constructor is invalid
+        super().__init__(actor, *target_list) # type: ignore
         self.routine = None
         self.complete = False
         self.actor = actor
