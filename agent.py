@@ -376,10 +376,13 @@ class ShopkeeperAgent(PopulationAgent):
 
         self.change_site(self.town.site)
 
+        replaced_morph = self.town.site.next_abandon_morph()
+
         self.building_morph = sites.TownBuildingMorph(
             self.shop_type.building_type,
             self.person,
-        )
+            replaced_abandon_morph=replaced_morph
+        )        
 
         self.town.site.add_morph(
             self.building_morph

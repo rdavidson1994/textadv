@@ -13,9 +13,23 @@ from abc import ABC, abstractmethod
 
 from region import TownRegion
 
+class Morph(ABC):
+    @abstractmethod
+    def alter_region(self, region):
+        pass
+
+class AbandonMorph(Morph):
+    def __init__(self, building_morph):
+        self.building_morph = building_morph
+        self.replaced = False
+    
+    def alter_region(self, region):
+        # print(f"Applying abandon morph for building morph {self.building_morph}")
+        self.building_morph.become_abandonned()
+        return region
 
 class Site:
-    def __init__(self, sched=None, entrance_portal=None, **kwargs):
+    def __init__(self, sched=None, entrance_portal=None, agent=None, **kwargs):
         self.schedule = sched
         self.landmark : Optional[game_object.Landmark] = None
         if self.schedule is None:
@@ -26,6 +40,14 @@ class Site:
         self.entrance_portal = entrance_portal
         entrance_portal.set_site(self)
         self.unused_morph_index = 0
+        self.agent = agent
+    
+    def next_abandon_morph(self):
+        for morph in self.morphs:
+            if isinstance(AbandonMorph, morph):
+                if not morph.replaced:
+                    return morph
+        return None
 
     def get_name(self, viewer=None):
         try:
@@ -101,20 +123,10 @@ class Site:
             population.hide_actors()
 
 
-class Morph(ABC):
-    @abstractmethod
-    def alter_region(self, region):
-        pass
-
-
 class TownSite(Site):
     # This is a placeholder until two goals are met:
     # 1. Region code is abstracted enough to accommodate towns
     # 2. Towns have proper a region subclass written
-
-    def __init__(self, *args, agent, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.agent = agent
 
     def allows_population(self, population):
         # Placeholder for better faction logic
@@ -125,17 +137,10 @@ class TownSite(Site):
             self.entrance_portal, self.schedule, self.agent
         )
 
-class AbandonMorph(Morph):
-    def __init__(self, building_morph):
-        self.building_morph = building_morph
-    
-    def alter_region(self, region):
-        # print(f"Applying abandon morph for building morph {self.building_morph}")
-        self.building_morph.become_abandonned()
-        return region
 
 class TownBuildingMorph(Morph):
-    def __init__(self, building_factory, shopkeeper_actor=None):
+    def __init__(self, building_factory, shopkeeper_actor=None, replaced_abandon_morph=None):
+        self.replaced_abandon_morph = replaced_abandon_morph
         self.building_factory = building_factory
         self.building = None
         self.shopkeeper_actor = shopkeeper_actor
@@ -153,6 +158,9 @@ class TownBuildingMorph(Morph):
     def alter_region(self, region):
         # print(f"Applying building morph {self}")
         assert isinstance(region, TownRegion)
+        if self.replaced_abandon_morph:
+            self.replaced_abandon_morph.b
+
         self.building = self.building_factory(
             region.main_location,
             sched=region.schedule,
@@ -172,7 +180,7 @@ class TownBuildingMorph(Morph):
         assert self.has_building()
         return self.building
     
-    def get_abandon_morph(self):
+    def get_abandon_morph(self) -> AbandonMorph:
         return AbandonMorph(self)
 
 
