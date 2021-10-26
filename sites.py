@@ -44,7 +44,7 @@ class Site:
     
     def next_abandon_morph(self):
         for morph in self.morphs:
-            if isinstance(AbandonMorph, morph):
+            if isinstance(morph, AbandonMorph):
                 if not morph.replaced:
                     return morph
         return None
@@ -141,6 +141,8 @@ class TownSite(Site):
 class TownBuildingMorph(Morph):
     def __init__(self, building_factory, shopkeeper_actor=None, replaced_abandon_morph=None):
         self.replaced_abandon_morph = replaced_abandon_morph
+        if replaced_abandon_morph:
+            replaced_abandon_morph.replaced = True
         self.building_factory = building_factory
         self.building = None
         self.shopkeeper_actor = shopkeeper_actor
@@ -156,24 +158,25 @@ class TownBuildingMorph(Morph):
             self.abandon = True
 
     def alter_region(self, region):
-        # print(f"Applying building morph {self}")
+        print(f"Applying building morph {self}")
+        
         assert isinstance(region, TownRegion)
         if self.replaced_abandon_morph:
-            replaced_building = self.replaced_abandon_morph.building_morph
+            print("Did replace an abandon morph!")
+            replaced_building = self.replaced_abandon_morph.building_morph.building
             replaced_door = replaced_building.door
+            print(f"Region locations: {region.locations}")
+            region.remove_room(replaced_building)
         else:
+            print("Did not replace an abandon morph")
             replaced_door = None
 
         self.building = self.building_factory(
             region.main_location,
             sched=region.schedule,
             shopkeeper_actor=self.shopkeeper_actor,
-            replaced_door=replaced_door 
+            replaced_door=replaced_door
         )
-
-
-
-
 
         if self.abandon:
             # print("---- building morph {self} is abandoned, applying abandon effect")

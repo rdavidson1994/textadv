@@ -744,6 +744,9 @@ class TownRegion:
 
     def add_room(self, room):
         self.locations.append(room)
+    
+    def remove_room(self, room):
+        self.locations.remove(room)
 
     def room_with_type(self, room_type):
         candidates = [

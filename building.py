@@ -13,10 +13,12 @@ class Building(location.Location):
             kwargs["name"] = name_object.Name(self.default_name)
         super().__init__(*args, **kwargs)
         if replaced_door:
-            replaced_door.set_target_location(self)
-            self.door = replaced_door
-        else:
-            self.door = game_object.Door(source_location, self)
+            print("replacing door...")
+            replaced_door.end.name += "(whoops)"
+            replaced_door.source.vanish()
+            replaced_door.target.vanish()
+
+        self.door = game_object.Door(source_location, self)
 
 
 class Shop(Building):
