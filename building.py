@@ -8,11 +8,15 @@ from namemaker import NameMaker, make_name
 class Building(location.Location):
     default_name = "building"
 
-    def __init__(self, source_location, *args, **kwargs):
+    def __init__(self, source_location, *args, replaced_door=None, **kwargs):
         if "name" not in kwargs:
             kwargs["name"] = name_object.Name(self.default_name)
         super().__init__(*args, **kwargs)
-        self.door = game_object.Door(source_location, self)
+        if replaced_door:
+            replaced_door.set_target_location(self)
+            self.door = replaced_door
+        else:
+            self.door = game_object.Door(source_location, self)
 
 
 class Shop(Building):

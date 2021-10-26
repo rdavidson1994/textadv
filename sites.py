@@ -159,13 +159,22 @@ class TownBuildingMorph(Morph):
         # print(f"Applying building morph {self}")
         assert isinstance(region, TownRegion)
         if self.replaced_abandon_morph:
-            self.replaced_abandon_morph.b
+            replaced_building = self.replaced_abandon_morph.building_morph
+            replaced_door = replaced_building.door
+        else:
+            replaced_door = None
 
         self.building = self.building_factory(
             region.main_location,
             sched=region.schedule,
             shopkeeper_actor=self.shopkeeper_actor,
+            replaced_door=replaced_door 
         )
+
+
+
+
+
         if self.abandon:
             # print("---- building morph {self} is abandoned, applying abandon effect")
             self.building.become_abandonned()
