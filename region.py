@@ -716,6 +716,8 @@ class VillageCenter(location.Location):
                 f"{name}'s greatest hardship is {worst.get_name(viewer)}, "
                 f"who most recently attacked {delay:.2f} days ago.\n"
             )
+            if worst.site:
+                out += f"The locals say they are based in {worst.site.get_name(viewer)}"
         for enemy in self.agent.enemy_priority:
             if enemy.killer == viewer:
                 out += (
