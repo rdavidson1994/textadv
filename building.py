@@ -13,7 +13,6 @@ class Building(location.Location):
             kwargs["name"] = name_object.Name(self.default_name)
         super().__init__(*args, **kwargs)
         if replaced_door:
-            print("replacing door...")
             replaced_door.end.name += "(whoops)"
             replaced_door.source.vanish()
             replaced_door.target.vanish()

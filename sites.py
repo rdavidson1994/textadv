@@ -107,7 +107,6 @@ class Site:
         return self.morphs[self.unused_morph_index:]
 
     def update_region(self):
-        print(self.morphs)
         if not self.region:
             self.construct_base_region()
         
@@ -154,21 +153,16 @@ class TownBuildingMorph(Morph):
             # print("---- Immediately applying abandon effect")
             self.building.become_abandonned()
         else:
-            # print("---- Can't apply yet, marking for later")
+            # print("---- Can't apply yet, marking for later")f
             self.abandon = True
 
     def alter_region(self, region):
-        print(f"Applying building morph {self}")
-        
         assert isinstance(region, TownRegion)
         if self.replaced_abandon_morph:
-            print("Did replace an abandon morph!")
             replaced_building = self.replaced_abandon_morph.building_morph.building
             replaced_door = replaced_building.door
-            print(f"Region locations: {region.locations}")
             region.remove_room(replaced_building)
         else:
-            print("Did not replace an abandon morph")
             replaced_door = None
 
         self.building = self.building_factory(
