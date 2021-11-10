@@ -1,6 +1,7 @@
 from action import SingleTargetAction, ZeroTargetAction, Action
 from random import randint, choice
 from verb import StandardVerb
+import trait
 
 
 class Spell(Action):
@@ -51,7 +52,7 @@ class InvalidSpell(Spell, ZeroTargetAction):
 class Heal(Spell, SingleTargetAction):
     synonyms = ["heal"]
     mana_cost = 40
-    target_traits = ["person"]
+    target_traits = [trait.person]
 
     def affect_game(self):
         self.target.reset_body()
@@ -85,7 +86,7 @@ class AOESpell(Spell, ZeroTargetAction):
     affects_caster = False
 
     def affect_game(self):
-        for actor in self.actor.location.things_with_trait("actor"):
+        for actor in self.actor.location.things_with_trait(trait.actor):
             if actor != self.actor or self.affects_caster:
                 self.spell_effect(actor)
 

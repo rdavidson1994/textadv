@@ -1,3 +1,5 @@
+import trait
+
 class SpecialPhrase:
     def __init__(self, parser, synonyms, callback=None):
         self.parser = parser
@@ -31,7 +33,7 @@ class QuitPhrase(SpecialPhrase):
 
 class InventoryPhrase(SpecialPhrase):
     def innate_action(self):
-        item_list = self.parser.actor.things_with_trait('item')
+        item_list = self.parser.actor.things_with_trait(trait.item)
         output_string = "\n".join([item.name for item in item_list])
         output_string += "\nmoney={}".format(self.parser.actor.money)
         return output_string

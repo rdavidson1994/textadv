@@ -1,5 +1,6 @@
 import errors
 import location
+import trait
 import menu_wrap
 import phrase
 import actor
@@ -73,7 +74,7 @@ class Parser(AI):
             return out
 
     def see_thing(self, thing):
-        if thing.has_trait("portal") and thing.landmark:
+        if thing.has_trait(trait.portal) and thing.landmark:
             self.actor.known_landmarks.add(thing.landmark)
 
     def agrees_to(self, own_action):

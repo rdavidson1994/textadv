@@ -1,5 +1,6 @@
 from typing import Optional
 from game_object import Thing, debug
+import trait
 
 class Location(Thing):
     def __init__(self, description="", reg=None, *args, **kwargs):
@@ -7,7 +8,7 @@ class Location(Thing):
         Thing.__init__(self, *args, **kwargs)
         self.reg = reg
         self.map_node : Optional[Node] = None
-        self.traits.add("location")
+        self.traits.add(trait.location())
         self.description = description
 
     def is_entrance(self):
@@ -60,14 +61,14 @@ class Location(Thing):
         text_map = self.get_text_map(viewer)
         if text_map:
             str_list.append(text_map)
-        category_list = [("actor", "\nPeople and animals:"),
-                         ("item", "\nItems:"),
-                         ("interesting", "\nInteresting features:"),
-                         ("portal", "\nExits:")]
+        category_list = [(trait.actor, "\nPeople and animals:"),
+                         (trait.item, "\nItems:"),
+                         (trait.interesting, "\nInteresting features:"),
+                         (trait.portal, "\nExits:")]
         if full_text:
             str_list.append(self.get_description(viewer))
-        for trait, header in category_list:
-            subset = self.things_with_trait(trait)
+        for trait_type, header in category_list:
+            subset = self.things_with_trait(trait_type)
             if viewer in subset:
                 subset.remove(viewer)
             subset = {t for t in subset if self.line_of_sight(viewer, t)}

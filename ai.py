@@ -1,5 +1,6 @@
 import action
 import logging
+import trait
 from action import (AttackHeroRoutine,
                     Routine,
                     Wait,
@@ -126,12 +127,12 @@ class WaitingMonsterAI(AI):
 
 class WanderingMonsterAI(AI):
     def is_hostile_to(self, other):
-        return other.has_trait("hero")
+        return other.has_trait(trait.hero)
 
     def hear_announcement(self, act):
         super().hear_announcement(act)
         if getattr(act, "traverses_portals", False):
-            if act.actor.has_trait("hero"):
+            if act.actor.has_trait(trait.hero):
                 self.cancel_actions()
 
     def get_local_action(self):
@@ -160,7 +161,7 @@ class SquadAI(AI):
         return act
 
     def join_other_squad(self, other):
-        assert other.has_trait("kobold")
+        assert other.has_trait(trait.kobold)
         if other.squad:
             other.squad.add_member(self)
         else:
@@ -168,7 +169,7 @@ class SquadAI(AI):
             self.squad.add_member(other)
 
     def is_hostile_to(self, other):
-        return other.has_trait("hero")
+        return other.has_trait(trait.hero)
 
     class Sighting:
         def __init__(self, viewer, thing):
@@ -209,10 +210,10 @@ class SquadAI(AI):
                 # If not fighting, and see an enemy, cancel so you can fight.
                 self.cancel_actions()
 
-        if thing.has_trait("kobold") and self.enemies:
+        if thing.has_trait(trait.kobold) and self.enemies:
             self.share_enemy_knowledge(thing)
 
-        elif thing.has_trait("corpse"):
+        elif thing.has_trait(trait.corpse):
             # If you see a corpse, stop looking for its owner
             owner = getattr(thing, "owner", None)
             if owner in self.enemies:
@@ -279,7 +280,7 @@ class SquadAI(AI):
 
     def nearby_allies(self):
         things = self.actor.location.things
-        return {t for t in things if t.has_trait("kobold")}
+        return {t for t in things if t.has_trait(trait.kobold)}
 
     def at_rally(self):
         return self.actor.location == self.get_rally_point()
@@ -400,7 +401,7 @@ class PrisonerAI(PeacefulAI):
 
     def get_local_action(self):
         if (
-            self.actor.location.things_with_trait("hero")
+            self.actor.location.things_with_trait(trait.hero)
             and self.hostile_to_hero
         ):
             act = self.start_routine(AttackHeroRoutine(self.actor))

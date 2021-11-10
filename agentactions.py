@@ -1,12 +1,12 @@
 import action
-
+import trait
 
 class AmbushActor(action.SingleTargetAction):
     time_elapsed = 0
     requires_reach = False
     cooldown_time = 0
     is_hostile = True
-    target_traits = ["actor"]
+    target_traits = [trait.actor]
     hidden = True
     synonyms = ["ambush"]
 

@@ -1,4 +1,4 @@
-import game_object, action, spells
+import game_object, action, spells, trait
 
 
 class Rune(game_object.Thing):
@@ -9,7 +9,8 @@ class Rune(game_object.Thing):
         self.spell = spell
         self.mana_bonus = mana_bonus
         self.actors_affected = set()
-        self.traits |= {"interesting", "readable"}
+        self.traits.add(trait.interesting())
+        self.traits.add(trait.readable())
 
     def be_targeted(self, act):
         outcome, text = super().be_targeted(act)

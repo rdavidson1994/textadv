@@ -2,6 +2,7 @@ import game_object
 import location
 import name_object
 import shopkeeper
+import trait
 from namemaker import NameMaker, make_name
 
 
@@ -53,7 +54,7 @@ class Inn(Shop):
 
     def __init__(self, *args, room_price=5, **kwargs):
         super().__init__(*args, **kwargs)
-        self.traits.add("inn")
+        self.traits.add(trait.inn())
         self.room_price = room_price
 
 
@@ -72,6 +73,6 @@ class WeaponShop(Shop):
 
         armor = game_object.Item(name="armor", location=self)
         armor.price = 150
-        armor.traits.add("armor")
+        armor.traits.add(trait.armor())
         armor.damage_reduction = 2
         armor.owner = self.shopkeeper

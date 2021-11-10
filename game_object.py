@@ -1,4 +1,5 @@
 import errors
+import trait
 
 from name_object import Name
 import logging
@@ -53,7 +54,7 @@ class Thing:
         self.trapping_item = None
         self.coordinates = coordinates
         self.things = set()
-        self.traits = set(traits)
+        self.traits = trait.TraitSet()
         self.location = location
         self.original_location = location
         self.arranged = True
@@ -98,7 +99,7 @@ class Thing:
     def broadcast_announcement(self, action):
         # This function gets hit pretty hard - should be more optimized
         target_set = set(action.target_list)
-        subscribers = self.things_with_trait("listener") | target_set
+        subscribers = self.things_with_trait(trait.listener) | target_set
         broadcast_source = action.actor
         if (
             getattr(action, "traverses_portals", False)
@@ -149,8 +150,11 @@ class Thing:
             self.original_location = new_location
         self.coordinates = coordinates
 
-    def has_trait(self, trait):
-        if trait in self.traits:
+    U = TypeVar("U")
+
+    def has_trait(self, trait: Type[U]):
+        assert type(trait) == type
+        if self.traits.contains_trait(trait):
             return True
         else:
             return False
@@ -164,6 +168,7 @@ class Thing:
             return False
 
     def things_with_trait(self, trait):
+        assert type(trait) == type
         return {thing for thing in self.things if thing.has_trait(trait)}
 
     def things_with_name(self, name, viewer=None):
@@ -196,7 +201,7 @@ class Thing:
         if self.has_thing(thing):
             return True
         else:
-            for container in self.things_with_trait("container"):
+            for container in self.things_with_trait(trait.container):
                 if container.has_nested_thing(thing):
                     return True
             return False
@@ -265,7 +270,7 @@ class Thing:
         return self.get_name(viewer)
 
     def show_text_to_hero(self, text):
-        for i in self.things_with_trait("hero"):
+        for i in self.things_with_trait(trait.hero):
             i.receive_text_message(text)
 
 
@@ -273,7 +278,7 @@ class Item(Thing):
     def __init__(self, *args, **kwargs):
         Thing.__init__(self, *args, **kwargs)
         self.damage_reduction = 0
-        self.traits.add("item")
+        self.traits.add(trait.item())
 
     def __repr__(self):
         return "Item({})".format(self.name)
@@ -282,7 +287,7 @@ class Item(Thing):
 class FoodItem(Item):
     def __init__(self, nutrition=0, *args, **kwargs):
         Item.__init__(self, *args, **kwargs)
-        self.traits.add("food")
+        self.traits.add(trait.food())
         self.nutrition = nutrition
 
     def get_suggested_verbs(self):
@@ -310,7 +315,7 @@ class Container(Item):
     def __init__(self, is_open=True, *args, **kwargs):
         Item.__init__(self, *args, **kwargs)
         self.is_open = is_open
-        self.traits.add("container")
+        self.traits.add(trait.container())
 
     def get_look_text(self, viewer=None):
         base = super().get_look_text(viewer)
@@ -324,7 +329,7 @@ class Container(Item):
 class Cage(Thing):
     def __init__(self, key=None, *args, **kwargs):
         Thing.__init__(self, *args, **kwargs)
-        self.traits.add("lockable")
+        self.traits.add(trait.lockable())
         self.lock = Lock(locked=True, key=key)
         self.prisoners = set()
 
@@ -355,7 +360,7 @@ class PortalVertex(Thing):
     def __init__(self, direction, edge, *args, **kwargs):
         Thing.__init__(self, *args, **kwargs)
         self.direction = direction
-        self.traits.add("portal")
+        self.traits.add(trait.portal())
         self.edge = edge
         self.landmark = None
         self.lock : Optional[Lock] = None
@@ -383,7 +388,7 @@ class PortalVertex(Thing):
         sup = super().has_name(name, viewer=viewer)
         if sup:
             return True
-        elif name == "exit" and len(self.location.things_with_trait("portal")) == 1:
+        elif name == "exit" and len(self.location.things_with_trait(trait.portal)) == 1:
             return True
         else:
             return False
@@ -492,7 +497,7 @@ class PortalEdge:
         if locked or key is not None:
             self.lock = Lock(key, locked)
             for vertex in self.vertices:
-                vertex.traits.add("lockable")
+                vertex.traits.add(trait.lockable())
                 vertex.lock = self.lock
         else:
             self.lock = None
@@ -511,7 +516,7 @@ class PortalEdge:
         return output_portal
 
     def be_entered(self, actor, vertex):
-        if self.site and actor.has_trait("hero"):
+        if self.site and actor.has_trait(trait.hero):
             if vertex == self.site_exit:
                 # if the hero is leaving the site.
                 self.site.offload()

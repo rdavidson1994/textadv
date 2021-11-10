@@ -4,6 +4,7 @@ import math
 from random import choice, random, shuffle
 from typing import List, Dict, cast, Optional, Any
 
+import trait
 import action
 import agentactions
 import actor
@@ -115,7 +116,7 @@ class Town(WorldAgent):
         # # Removing the hardcoded towns for now
         # self.site.add_morph(sites.TownBuildingMorph(building.WeaponShop))
         # self.site.add_morph(sites.TownBuildingMorph(building.Inn))
-        self.traits.add("town")
+        self.traits.add(trait.town())
         self.enemy_priority : Dict[WorldAgent, int] = {}
         self.last_attacks = {}
 
@@ -357,7 +358,7 @@ class ShopkeeperAgent(PopulationAgent):
 
     def find_town(self):
         town_agents = self.location.things_with_trait(
-            "town", self.coordinates, 30
+            trait.town, self.coordinates, 30
         )
         if not town_agents:
             return None
@@ -477,14 +478,14 @@ class ExternalNuisance(PopulationAgent):
 
     def find_target(self):
         towns = self.location.things_with_trait(
-            "town", self.coordinates, 15
+            trait.town, self.coordinates, 15
         )
         active_towns = set(t for t in towns if not t.destroyed)
         self.target = set_choice(active_towns)
         if self.target is None:
             print(f"Having no suitable targets, {self.name} disbanded")
             self.vanish()
-            return False
+            return None
         print(f"{self.name} turned their eyes to {self.target.name}")
         self.move_to(self.target)
         if self.site:
@@ -509,7 +510,7 @@ class ExternalNuisance(PopulationAgent):
             if self.site_preference(site) < self.own_site_preference():
                 site = self.create_own_site()
             self.change_site(site)
-            if self.wants_to_morph(site):
+            if site is not None and self.wants_to_morph(site):
                 site.add_morph(self.get_morph())
             print(f"{self.name} took {site.get_name()}")
 
@@ -721,7 +722,7 @@ class KoboldGroup(ExternalNuisance):
                 name=Name(adjective) + "kobold"
             )
             kobold.ai = ai.SquadAI(kobold)
-            kobold.traits.add("kobold")
+            kobold.traits.add(trait.kobold())
             out.append(kobold)
         return out
 
@@ -733,7 +734,7 @@ class KoboldGroup(ExternalNuisance):
             location=None,
             name=Name("kobold leader"),
         )
-        boss.traits.add("kobold")
+        boss.traits.add(trait.kobold())
         boss.ai = ai.WanderingMonsterAI(boss)
         boss.combat_skill = 75
         sword = game_object.Item(location=boss, name=Name("crude sword"))

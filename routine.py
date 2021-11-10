@@ -47,7 +47,7 @@ class AttackHeroRoutine(Routine, action.ZeroTargetAction):
     def get_local_action(self):
         no_victims = False
         try:
-            next_victim = self.actor.location.things_with_trait("hero")[0]
+            next_victim = self.actor.location.things_with_trait(trait.hero)[0]
         except IndexError:
             no_victims = True
         if no_victims:

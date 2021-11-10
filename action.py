@@ -2,7 +2,7 @@ import logging
 # logging.basicConfig(level=logging.DEBUG,format='%(message)s')
 from math import sqrt, floor
 from typing import Optional, cast
-
+import trait
 import location
 import mixins
 import re
@@ -440,7 +440,7 @@ class Speak(ZeroTargetAction):
 
 class Eat(mixins.HeldTarget, SingleTargetAction):
     synonyms = ["eat", "drink"]
-    target_traits = ["food"]
+    target_traits = [trait.food]
     time_elapsed = 2000
 
     def affect_game(self):
@@ -499,7 +499,7 @@ class Enter(mixins.Motion, SingleTargetAction):
     """For when the player says 'Enter the wooden door'.
     the door you enter is the one he/she tells you to."""
     synonyms = ["enter", "exit"]
-    target_traits = ["portal"]
+    target_traits = [trait.portal]
 
     def __init__(self, actor, *target_list):
         super().__init__(actor, *target_list)
@@ -534,7 +534,7 @@ class Enter(mixins.Motion, SingleTargetAction):
 
 
 class LockingAction(mixins.HeldTool, ToolAction):
-    target_traits = ["lockable"]
+    target_traits = [trait.lockable]
     desired_state = None  # True/False
     desired_string = None  # "locked"/"unlocked"
     locks_things = True
@@ -666,7 +666,7 @@ class VectorTravel(ZeroTargetAction):
             self.new_coordinates = None
 
     def check_geometry(self):
-        if not self.actor.location.has_trait("wide"):
+        if not self.actor.location.has_trait(trait.wide):
             return False, "You can't travel overland from here."
         if self.new_coordinates is None:
             return False, "You can't travel that way from here."
@@ -763,7 +763,7 @@ class RentInnRoom(SingleTargetAction):
 
     def check_geometry(self):
         inn = self.actor.location
-        if not inn.has_trait("inn"):
+        if not inn.has_trait(trait.inn):
             return False, "This isn't an inn."
         elif inn.room_price > self.actor.money:
             return False, "You can't afford to stay here."
@@ -787,7 +787,7 @@ class WildernessFlee(ZeroTargetAction):
         self.actor.vanish()
 
     def check_traits(self):
-        if self.actor.location.has_trait("wide"):
+        if self.actor.location.has_trait(trait.wide):
             return super().check_traits()
         else:
             return False, "This location is too small for that."
@@ -955,7 +955,7 @@ class GeneralSellRoutine(SingleActionRoutine, SingleTargetAction):
     empty_reason = "There is no merchant here to deal with."
 
     def get_single_action(self):
-        candidates = self.actor.get_targets_from_trait("merchant")
+        candidates = self.actor.get_targets_from_trait(trait.merchant)
         if candidates:
             return Sell(self.actor, candidates[0], self.target)
         else:
@@ -967,7 +967,7 @@ class GeneralRentRoutine(SingleActionRoutine, ZeroTargetAction):
     empty_reason = "There is no innkeeper here."
 
     def get_single_action(self):
-        candidates = self.actor.get_targets_from_trait("merchant")
+        candidates = self.actor.get_targets_from_trait(trait.merchant)
         if candidates:
             return RentInnRoom(self.actor, candidates[0])
         else:
@@ -976,7 +976,7 @@ class GeneralRentRoutine(SingleActionRoutine, ZeroTargetAction):
 
 class ReadRoutine(SingleActionRoutine, SingleTargetAction):
     synonyms = ["read"]
-    target_traits = ["readable"]
+    target_traits = [trait.readable]
 
     def get_single_action(self):
         # placeholder, will need to revist when books exist
@@ -1014,7 +1014,7 @@ class TakeAllRoutine(ActionListRoutine, ZeroTargetAction):
 
 class LootRoutine(ActionListRoutine, SingleTargetAction):
     synonyms = ["loot"]
-    target_traits = ["container"]
+    target_traits = [trait.container]
     def build_action_list(self):
         out = [
             Take(self.actor, item)
@@ -1041,7 +1041,7 @@ class ExitRoutine(SingleActionRoutine, ZeroTargetAction):
 
     def get_single_action(self):
         candidates = self.actor.get_valid_targets()
-        portals = [c for c in candidates if c.has_trait("portal")]
+        portals = [c for c in candidates if c.has_trait(trait.portal)]
         if len(portals) == 0:
             return FailAction(self.actor, "There are no exits from here.")
         elif len(portals) == 1:
@@ -1080,7 +1080,7 @@ class DurationWaitRoutine(Routine, ZeroTargetAction):
 class AttackHeroRoutine(Routine, ZeroTargetAction):
     def get_local_action(self):
         try:
-            victim_set = self.actor.location.things_with_trait("hero")
+            victim_set = self.actor.location.things_with_trait(trait.hero)
             victim = next(iter(victim_set))
         except StopIteration:
             self.complete = True
@@ -1092,7 +1092,7 @@ class AttackHeroRoutine(Routine, ZeroTargetAction):
 
 class WanderOnceRoutine(SingleActionRoutine, ZeroTargetAction):
     def get_single_action(self):
-        portals = self.actor.location.things_with_trait("portal")
+        portals = self.actor.location.things_with_trait(trait.portal)
         if portals:
             portal_list = list(portals)
             portal = choice(portal_list)
@@ -1130,7 +1130,7 @@ class LeaveDungeonRoutine(Routine, ZeroTargetAction):
         act = self.start_routine(WalkToEntranceRoutine(self.actor))
         if act:
             return act
-        if self.actor.location.has_trait("wide"):
+        if self.actor.location.has_trait(trait.wide):
             debug("ACTOR FLED TO WILDERNESS")
             return WildernessFlee(self.actor)
         game_exits = self.actor.location.things_with_name("exit", viewer=self.actor)
@@ -1178,7 +1178,7 @@ class DirectionMoveRoutine(SingleActionRoutine, ZeroTargetAction):
         found_portal = None
         for portal in self.actor.get_valid_targets():
             if (
-                    portal.has_trait("portal") and
+                    portal.has_trait(trait.portal) and
                     portal.get_relative_direction(self.actor) == self.direction
             ):
                 found_portal = portal

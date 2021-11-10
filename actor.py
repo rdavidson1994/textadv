@@ -1,6 +1,6 @@
 from action import ActionListRoutine, Routine
 import math
-
+import trait
 import game_object
 import body
 import parsing
@@ -23,7 +23,8 @@ class Actor(game_object.Thing):
         self.alive = True
         self.armor = None
         self.damage_log = Counter()  # actors to amounts
-        self.traits.update({"actor", "listener"})
+        self.traits.add(trait.actor())
+        self.traits.add(trait.listener())
         self.scheduled_event = None
         self.ai : Optional[ai.AI] = None
         self.actor_strategy_dict = dict()
@@ -125,7 +126,7 @@ class Person(Actor):
         self.known_landmarks = set()
         self.body = body.Body(self)
         self.spells_known = set()
-        self.traits.add("person")
+        self.traits.add(trait.person())
         self.get_health_report = self.body.get_health_report
         self.money = 0
 
@@ -194,7 +195,7 @@ class Person(Actor):
             name=self.name + "'s corpse",
             other_names=[self.name + "s corpse", "corpse", self.name]
         )
-        corpse.traits.add("corpse")
+        corpse.traits.add(trait.corpse())
         corpse.owner = self
         for item in set(self.things):
             item.change_location(corpse)
@@ -328,7 +329,7 @@ class Person(Actor):
         return 2
 
     def find_portal_facing_direction(self, direction):
-        for portal in self.location.things_with_trait("portal"):
+        for portal in self.location.things_with_trait(trait.portal):
             if portal.get_relative_direction(self) == direction:
                 return portal
         else:
@@ -560,7 +561,7 @@ class SquadActor(Person):
 class Hero(Humanoid):
     def __init__(self, *args, **kwargs):
         Humanoid.__init__(self, *args, **kwargs)
-        self.traits.add("hero")
+        self.traits.add(trait.hero())
         self.ai = parsing.Parser(self)
         self.visited_locations = set()
         self.combat_skill = 100

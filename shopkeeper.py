@@ -8,6 +8,7 @@ import population
 import environment
 import typing
 import building
+import trait
 from typing import Optional
 
 
@@ -82,7 +83,7 @@ class Person(actor.Person):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ai = ShopkeeperAI(self)
-        self.traits.add("merchant")
+        self.traits.add(trait.merchant())
         self.shop : Optional[Location] = None
 
 

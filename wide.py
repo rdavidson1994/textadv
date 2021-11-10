@@ -8,7 +8,7 @@ from collections import Counter
 
 # logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 import location
-
+import trait
 
 class Overworld(location.Location):
     view_distance = 10
@@ -18,7 +18,7 @@ class Overworld(location.Location):
         self.encounter_fields = []
         self.width = width
         self.height = height
-        self.traits.add("wide")
+        self.traits.add(trait.wide())
 
     def describe(self, viewer, full_text=True):
         out = super().describe(viewer, full_text)
@@ -27,6 +27,7 @@ class Overworld(location.Location):
         return out
 
     def things_with_trait(self, trait, center=None, radius=None):
+        assert type(trait) == type
         candidates = super().things_with_trait(trait)
         if center is not None and radius is not None:
             out = set(
@@ -41,7 +42,7 @@ class Overworld(location.Location):
         # If you specify a center/radius, you must specify both
         return set(
             portal.edge.site for portal
-            in self.things_with_trait("portal", center, radius)
+            in self.things_with_trait(trait.portal, center, radius)
             if portal.edge.site is not None
         )
 

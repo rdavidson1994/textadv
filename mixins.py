@@ -1,10 +1,11 @@
 from logging import debug
 import errors
+import trait
 
 
 class ItemTarget:
     def check_traits(self):
-        if self.target.has_trait("item"):
+        if self.target.has_trait(trait.item):
             return super().check_traits()
         else:
             template = "You can only {} reasonably sized inanimate objects."
