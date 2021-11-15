@@ -66,3 +66,6 @@ class interesting: pass
 
 @dataclass
 class readable: pass
+
+@dataclass
+class meat: pass

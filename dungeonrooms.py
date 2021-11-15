@@ -11,6 +11,7 @@ import runes
 from actor import Person
 from ai import WanderingMonsterAI
 import parsetemplate
+import trait
 # logging.basicConfig(level=logging.DEBUG,format='%(message)s')
 debug = logging.debug
 
@@ -333,7 +334,10 @@ class Kitchen(GeneratedRoom):
 
     def generate_items(self):
         d = self.decor_dict
-        d["meat"] = Item(location=self, names=["meat", "meats"])
+        meat = Item(location=self, names=["meat", "meats"])
+        meat.traits.add(trait.meat())
+        meat.traits.add(trait.food())
+        d["meat"]
         knife = Item(location=self, names=["cleaver", "knife"])
         knife.damage_mult = 6
         knife.damage_type = "sharp"
