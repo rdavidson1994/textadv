@@ -33,7 +33,6 @@ class Spell(Action):
         if not known:
             return False, "You don't know that spell."
         (components_okay, explanation) = self.expend_components(
-            actor=self.actor,
             dry_run=True
         )
         if not components_okay:
@@ -84,7 +83,7 @@ class Heal(Spell, SingleTargetAction):
             return False, "You have no meat to use for the spell."
 
         if not dry_run:
-            item.destroy()
+            item.vanish()
         return (True, "")
 
     def spell_effect(self):
