@@ -337,7 +337,7 @@ class Kitchen(GeneratedRoom):
         meat = Item(location=self, names=["meat", "meats"])
         meat.traits.add(trait.meat())
         meat.traits.add(trait.food())
-        d["meat"]
+        d["meat"] = meat
         knife = Item(location=self, names=["cleaver", "knife"])
         knife.damage_mult = 6
         knife.damage_type = "sharp"
