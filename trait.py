@@ -69,3 +69,12 @@ class readable: pass
 
 @dataclass
 class meat: pass
+
+@dataclass
+class kobold: pass
+
+@dataclass
+class armor: pass
+
+@dataclass
+class corpse: pass
