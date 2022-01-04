@@ -27,7 +27,7 @@ class SpecialPhrase:
 class QuitPhrase(SpecialPhrase):
     def innate_action(self):
         self.parser.actor.schedule.end_game = True
-        # print(f"quit_phrase set {self.parser.hero.schedule}.end_game to True")
+        # print_(f"quit_phrase set {self.parser.hero.schedule}.end_game to True")
         return "Ending game."
 
 

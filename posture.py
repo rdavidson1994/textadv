@@ -150,4 +150,4 @@ def random_posture(posture_type=None):
 
 if __name__ == "__main__":
     p = random_posture()
-    print(p.get_summary())
+    p.get_summary()

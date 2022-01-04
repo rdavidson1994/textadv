@@ -138,12 +138,15 @@ class ParserManager:
             cls.files_read[filename] = template_dict
         return RoomTemplateParser(room, cls.files_read[filename][key])
 
+def test_print(*args, **kwargs):
+    # placeholder
+    pass
 
 def test():
     """
     class Room:
         def evaluate_token(self, token):
-            print("Sent token: "+token)
+            test_print("Sent token: "+token)
             if token == "use":
                 return True
             else:
@@ -152,13 +155,13 @@ def test():
 
     test_string = "Just a string"
     my_parser = TemplateParser(test_string)
-    print(my_parser.parse())
+    test_print(my_parser.parse())
 
 
 def else_test():
     string = "Outer text {use: ignored text *else: else text}"
     p = TemplateParser(string)
-    print(p.full_parse())
+    test_print(p.full_parse())
 
 
 def room_test():
@@ -166,10 +169,10 @@ def room_test():
     tr = TreasureRoom()
     tr2 = TreasureRoom()
     rtp = ParserManager.get_parser(tr, "room_descriptions.txt", "TreasureRoom")
-    print(rtp.full_parse())
+    test_print(rtp.full_parse())
     tr.decor_dict["chest"].change_location(tr2)
-    print("Furnish test: "+str(tr.has_furnishing("chest")))
-    print(rtp.full_parse())
+    test_print("Furnish test: "+str(tr.has_furnishing("chest")))
+    test_print(rtp.full_parse())
 
 
 def apothecary_test():

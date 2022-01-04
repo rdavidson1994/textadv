@@ -13,6 +13,9 @@ from abc import ABC, abstractmethod
 
 from region import TownRegion
 
+def sites_print(*args, **kwargs):
+    pass
+
 class Morph(ABC):
     @abstractmethod
     def alter_region(self, region):
@@ -24,7 +27,7 @@ class AbandonMorph(Morph):
         self.replaced = False
     
     def alter_region(self, region):
-        # print(f"Applying abandon morph for building morph {self.building_morph}")
+        # print_(f"Applying abandon morph for building morph {self.building_morph}")
         self.building_morph.become_abandonned()
         return region
 
@@ -60,7 +63,7 @@ class Site:
 
     def add_population(self, population):
         if not self.allows_population(population):
-            print(self.allows_population(population))
+            sites_print(self.allows_population(population))
         self.populations.append(population)
 
     def remove_population(self, population):
@@ -148,12 +151,12 @@ class TownBuildingMorph(Morph):
         self.abandon = False
     
     def become_abandonned(self):
-        # print(f"Attempting to abandon {self}")
+        # print_(f"Attempting to abandon {self}")
         if self.building:
-            # print("---- Immediately applying abandon effect")
+            # print_("---- Immediately applying abandon effect")
             self.building.become_abandonned()
         else:
-            # print("---- Can't apply yet, marking for later")f
+            # print_("---- Can't apply yet, marking for later")f
             self.abandon = True
 
     def alter_region(self, region):
@@ -173,10 +176,10 @@ class TownBuildingMorph(Morph):
         )
 
         if self.abandon:
-            # print("---- building morph {self} is abandoned, applying abandon effect")
+            # print_("---- building morph {self} is abandoned, applying abandon effect")
             self.building.become_abandonned()
         region.add_room(self.building)
-        # print(f"Done applying building morph {self}")
+        # print_(f"Done applying building morph {self}")
         return region
 
     def has_building(self):
@@ -287,10 +290,10 @@ def sites_test():
 def cave_site_test():
     cave = Cave()
     cave.update_region()
-    print(cave.region.get_text_map())
+    sites_print(cave.region.get_text_map())
     cave.add_morph(KoboldHabitation())
     cave.update_region()
-    print(cave.region.get_text_map())
+    sites_print(cave.region.get_text_map())
 
 
 if __name__ == "__main__":

@@ -294,7 +294,7 @@ class SquadAI(AI):
                     if act:
                         return act
                     else:
-                        print("FAILED: Nearby enemies, but couldn't attack")
+                        pass # print_("FAILED: Nearby enemies, but couldn't attack")
                 else:
                     rout = self.HuntEnemiesRoutine(self.enemies, self.actor)
                     act = self.start_routine(rout)
@@ -368,7 +368,6 @@ class PeacefulAI(AI):
                     return act
                 else:
                     # Loop continues to next enemy
-                    print("Warning, invalid target in present_enemies")
                     ai.present_enemies.remove(enemy)
             self.complete = True
             return None  # if no more enemies
@@ -433,4 +432,3 @@ if __name__ == "__main__":
     place = Location()
     dude = actor.WaitingActor()
     my_action = dude.get_action()
-    print(my_action)

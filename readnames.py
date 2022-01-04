@@ -79,5 +79,5 @@ if __name__ == "__main__":
             out.append(next)
         out.append(tc.next_from(out[-1], is_final=True))
 
-        print(out)
-        print("".join(out).capitalize())
+        # prin(out)
+        # prin("".join(out).capitalize())

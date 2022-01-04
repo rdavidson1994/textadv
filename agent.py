@@ -25,6 +25,10 @@ from population import Population
 
 day = 1000*60*60*24
 
+def agent_print(*args, **kwargs):
+    # placeholder until a better place for agent output is decided on (if I feel like it)
+    pass
+
 
 def set_choice(in_set):
     try:
@@ -91,13 +95,13 @@ class WorldEvents(WorldAgent):
     def take_turn(self):
         if random() < 1/100:
             ghouls = GhoulHorde.in_world(self.world)
-            print(f"{ghouls.name} appeared")
+            agent_print(f"{ghouls.name} appeared")
         if random() < 1/75:
             kobolds = KoboldGroup.in_world(self.world)
-            print(f"{kobolds.name} emerged from underground")
+            agent_print(f"{kobolds.name} emerged from underground")
         if random() < 1/50:
             ants = GiantAntSwarm.in_world(self.world)
-            print(f"{ants.name} surfaced, hungry for food")
+            agent_print(f"{ants.name} surfaced, hungry for food")
 
 
 class Town(WorldAgent):
@@ -156,7 +160,7 @@ class Town(WorldAgent):
         if random() < 1/200:
             self.tomb_count += 1
             tomb_name = namemaker.make_name()
-            print(f"{self.name} built a tomb named {tomb_name.get_text()}")
+            agent_print(f"{self.name} built a tomb named {tomb_name.get_text()}")
             sites.Tomb.at_point(
                 self.location,
                 direction.random(),
@@ -166,11 +170,11 @@ class Town(WorldAgent):
 
         if random() < 1/1000:
             self.unrest += 20
-            print(f"{self.name} suffered a plague")
+            agent_print(f"{self.name} suffered a plague")
 
         roll = random()
         if roll < 1/10:
-            # print(f"{self.name} had a good harvest")
+            # print_(f"{self.name} had a good harvest")
             if self.unrest > 10:
                 self.unrest -= 10
             else:
@@ -178,7 +182,7 @@ class Town(WorldAgent):
 
         elif roll > 9/10:
             self.unrest += 3
-            # print(f"{self.name} had a bad harvest")
+            # print_(f"{self.name} had a bad harvest")
 
         if random() < (self.unrest/100)**2:
             group = BanditGroup(
@@ -188,10 +192,10 @@ class Town(WorldAgent):
                 coordinates=self.location.random_in_circle(
                     self.coordinates, 5),
             )
-            print(f"{self.name} spawned {group.name} at unrest {self.unrest:.2f}")
+            agent_print(f"{self.name} spawned {group.name} at unrest {self.unrest:.2f}")
 
         if self.unrest > 60 + random()*40:
-            print(f"{self.name} crumbled to ruin amid starvation and rioting.")
+            agent_print(f"{self.name} crumbled to ruin amid starvation and rioting.")
             self.destroyed = True
             return
 
@@ -252,7 +256,7 @@ class PopulationAgent(WorldAgent):
         self.refresh()
 
     def die(self):
-        print(f"{self.name} were eradicated.")
+        agent_print(f"{self.name} were eradicated.")
         self.alive = False
         self.vanish()
 
@@ -372,7 +376,7 @@ class ShopkeeperAgent(PopulationAgent):
             )
 
         self.town = new_town
-        print(f"{self.name} moved to {self.town.get_name()}")
+        agent_print(f"{self.name} moved to {self.town.get_name()}")
 
 
         self.change_site(self.town.site)
@@ -393,7 +397,7 @@ class ShopkeeperAgent(PopulationAgent):
         if self.town is None:
             town = self.find_town()
             if not town:
-                print(f"{self.name} gave up on being a {self.shop_type.shopkeeper_name}")
+                agent_print(f"{self.name} gave up on being a {self.shop_type.shopkeeper_name}")
                 self.vanish()
             else:
                 self.move_towns(town)
@@ -483,13 +487,13 @@ class ExternalNuisance(PopulationAgent):
         active_towns = set(t for t in towns if not t.destroyed)
         self.target = set_choice(active_towns)
         if self.target is None:
-            print(f"Having no suitable targets, {self.name} disbanded")
+            agent_print(f"Having no suitable targets, {self.name} disbanded")
             self.vanish()
             return None
-        print(f"{self.name} turned their eyes to {self.target.name}")
+        agent_print(f"{self.name} turned their eyes to {self.target.name}")
         self.move_to(self.target)
         if self.site:
-            print(f"{self.name} abandoned {self.site.get_name()}")
+            agent_print(f"{self.name} abandoned {self.site.get_name()}")
             self.change_site(None)
 
     def acquire_site(self):
@@ -501,7 +505,7 @@ class ExternalNuisance(PopulationAgent):
             site for site in nearby_sites if site.allows_population(self)
         ]
         if not candidate_sites:
-            print(f"Finding no suitable home, {self.name} disbanded")
+            agent_print(f"Finding no suitable home, {self.name} disbanded")
             self.vanish()
             return False
         else:
@@ -512,7 +516,7 @@ class ExternalNuisance(PopulationAgent):
             self.change_site(site)
             if site is not None and self.wants_to_morph(site):
                 site.add_morph(self.get_morph())
-            print(f"{self.name} took {site.get_name()}")
+            agent_print(f"{self.name} took {site.get_name()}")
 
     def take_turn(self):
         if self.target is None or self.target.destroyed:
@@ -527,7 +531,7 @@ class ExternalNuisance(PopulationAgent):
         self.power -= 0.1
         if random() < 1/10 and not self.target.destroyed:
             new_unrest = self.target.unrest + self.power/2
-            print(
+            agent_print(
                 f"{self.name} attacked {self.target.get_name()} "
                 f"(unrest {self.target.unrest:.2f}->{new_unrest:.2f})"
             )
@@ -536,7 +540,7 @@ class ExternalNuisance(PopulationAgent):
             self.power += 4/self.target.unrest
         if self.power <= 0:
             self.vanish()
-            print(f"{self.name} was disbanded")
+            agent_print(f"{self.name} was disbanded")
             return
 
     def encounter_actor(self, other):

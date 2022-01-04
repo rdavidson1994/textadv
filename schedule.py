@@ -17,7 +17,8 @@ class Event:
         return self.content
 
     def happen(self):
-        print("{} happened.".format(self.content))
+        # prin("{} happened.".format(self.content))
+        pass
 
 
 class TimerEvent(Event):
@@ -149,7 +150,7 @@ class Schedule:
             # debug("queue after grant {}".format(self.event_list))
         else:
             pass
-            # print("HEY, CANCELLATION WITH NO SCHEDULED EVENT")
+            # print_("HEY, CANCELLATION WITH NO SCHEDULED EVENT")
 
     def stop_game(self):
         self.end_game = True
@@ -205,4 +206,4 @@ if __name__ == "__main__":
     e2 = Event(my_schedule, 0, "Before A", True)
     e3 = Event(my_schedule, 2000, "C")
     e4 = Event(my_schedule, 2000, "D")
-    print([event.content for event in my_schedule.event_list])
+    # prin([event.content for event in my_schedule.event_list])

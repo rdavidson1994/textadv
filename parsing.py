@@ -251,4 +251,4 @@ if __name__ == "__main__":
     bsword = game_object.Item(
         location=loc, name="sword", other_names=["bronze sword"])
     p = Parser(dude)
-    print(p.execute_user_input())
+    p.execute_user_input()

@@ -823,7 +823,7 @@ class Routine:
                 and self.actor.awake
         ):
             # question of the day: Why does this not happen?
-            # print("Saw thing due to entrance announcement")
+            # print_("Saw thing due to entrance announcement")
             self.see_thing(action.actor)
 
     def social_response(self, act):
@@ -856,13 +856,13 @@ class Routine:
         return act
 
     def attempt(self):
-        print("ROUTINE ATTEMPTED FOR: " + self.actor.name)
+        # print_("ROUTINE ATTEMPTED FOR: " + self.actor.name)
         self.actor.set_routine(self)
         # This is bad news, since routines shouldn't make it to the schedule
         return True, "SILENCE"
 
     def get_local_action(self):
-        print("Routine stub hit")
+        # print_("Routine stub hit")
         self.complete = True
         return None
 
@@ -1121,7 +1121,7 @@ class WalkToEntranceRoutine(DestinationRoutine):
         try:
             return self.actor.location.path_to_entrance()
         except AttributeError:
-            print(f"Warning: no path from {self.actor.location}")
+            # print_(f"Warning: no path from {self.actor.location}")
             return []
 
 
@@ -1243,7 +1243,7 @@ if __name__ == "__main__":
     tar = TakeAllRoutine(dude)
     u = Unlock(dude, cage, key)
     prisoner.hear_announcement(u)
-    # print(dude.get_action())
-    # print(tar.action_list)
+    # print_(dude.get_action())
+    # print_(tar.action_list)
     # tar.attempt()
-    # print(dude.get_action())
+    # print_(dude.get_action())

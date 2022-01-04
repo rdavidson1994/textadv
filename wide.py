@@ -270,6 +270,6 @@ joe.ai = ai.WanderingMonsterAI(joe)
 
 quit_phrase = phrase.QuitPhrase(my_parser, ["quit", "exit"])
 inventory_phrase = phrase.InventoryPhrase(my_parser, ["i", "inventory"])
-print(john.location.describe(john))
+# prin(john.location.describe(john))
 my_schedule.run_game()
 """
