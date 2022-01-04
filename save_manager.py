@@ -1,29 +1,29 @@
 import argparse
 import dill as pickle
-from os import path
+from os import path, environ
 import json
+from uuid import uuid4
 
 
 class SaveManager:
-    def __init__(self, save_directory):
-        self.save_directory = save_directory
-
-    def load(self, save_number):
-        save_name = path.join(self.save_directory, f"save{save_number}.pkl")
-        with open(save_name, 'rb') as file:
+    def load(self, save_path):
+        with open(save_path, 'rb') as file:
             return pickle.load(file)
 
     def save(self, world):
         index = 0
-        base_save_name = path.join(self.save_directory, "save")
-        save_name = None
-        while not save_name or path.exists(save_name):
+        
+        save_directory = environ.get("TEXTADV_SAVE_DIR", path.abspath("./saves"))
+        base_save_name = path.join(save_directory, "save")
+        save_path = None
+        while not save_path or path.exists(save_path):
             index += 1
-            save_name = base_save_name + str(index) + ".pkl"
-            if index > 9999:
-                Exception("File names save0 - save9999 exist. What gives?")
+            if index < 10:
+                save_path = base_save_name + str(index) + ".pkl"
+            else:
+                save_path = path.join(save_directory, str(uuid4())+".pkl")
 
-        with open(save_name, 'wb') as file:
+        with open(save_path, 'wb') as file:
             pickle.dump(world, file)
 
-        return index
+        return save_path
