@@ -203,7 +203,7 @@ class Overworld(location.Location):
         used_symbols = set()
         for landmark in viewer.known_landmarks:
             if full_size or self.distance(viewer, landmark.coordinates) < radius:
-                name = landmark.get_name(viewer)
+                name = landmark.get_name()
                 symbol = name[0:2]
                 disambiguation_count = 1
                 while symbol in used_symbols and disambiguation_count < 9:

@@ -38,25 +38,35 @@ class Parser(AI):
 
         out_json_lines = []
         if not display_string.startswith("###[[["):
-            display_string = "###[[[TEXT]]]###"+output
-        for directive_and_body in display_string.split("###[[["):
-            directive, body = directive_and_body.split("]]]###")
+            display_string = menu_wrap.begin_pretty+display_string
+        if display_string.endswith(menu_wrap.begin_pretty):
+            valid_length = len(display_string) - len(menu_wrap.begin_pretty)
+            display_string = display_string[0:valid_length]
+        sections = display_string.split("###[[[")
+        if len(sections) > 0 and sections[0] == "":
+            sections.pop(0)
+        for section in sections:
+            directive, body = section.split("]]]###")
             if directive == "TEXT":
                 out_json_lines.append(json.dumps(body))
-            elif directive == "JSON": 
+            elif directive == "JSON":
+                if "\n" in body:
+                    raise Exception(f"Supposedly valid JSON contains literal newline: {body}")
                 out_json_lines.append(body)
             else:
                 raise Exception(f"Unexpected directive {directive}")
-                
+        
+        for json_line in out_json_lines:
+            print(json_line)
 
 
 
 
-        output = display_string  # .capitalize()
+        # output = display_string  # .capitalize()
 
-        output = output.replace("\n", "<br />\n")
-        output = output.replace(menu_wrap.web_new_line, "\n")
-        print(output, end="<br />\n")
+        # output = output.replace("\n", "<br />\n")
+        # output = output.replace(menu_wrap.web_new_line, "\n")
+        # print(output, end="<br />\n")
 
 
     def close(self):
