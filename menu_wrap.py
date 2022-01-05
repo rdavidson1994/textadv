@@ -1,6 +1,7 @@
 import json
 
-web_new_line = "WEBNEWLINE"
+begin_raw = "###[[[JSON]]]###"
+begin_pretty = "###[[[TEXT]]]###"
 
 
 def menu_wrap(noun, verbs, display_noun=None):
@@ -14,4 +15,4 @@ def menu_wrap(noun, verbs, display_noun=None):
             for verb in verbs
         ],
     }
-    return web_new_line+json.dumps(json_object)+web_new_line
+    return begin_raw+json.dumps(json_object)+begin_pretty

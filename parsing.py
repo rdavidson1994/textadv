@@ -26,16 +26,38 @@ class Parser(AI):
         self.logged_action = None
         self.last_interrupt_request = None
 
-    def display(self, display_string):
+    def display(self, display_string: str):
         # self.display_queue.append(display_string)
-        if display_string != "SILENCE":
-            output = display_string  # .capitalize()
-            if self.web_output:
-                output = output.replace("\n", "<br />\n")
-                output = output.replace(menu_wrap.web_new_line, "\n")
-                print(output, end="<br />\n")
+        if display_string == "SILENCE":
+            return
+
+        if not self.web_output:
+            print(display_string)
+            return
+
+
+        out_json_lines = []
+        if not display_string.startswith("###[[["):
+            display_string = "###[[[TEXT]]]###"+output
+        for directive_and_body in display_string.split("###[[["):
+            directive, body = directive_and_body.split("]]]###")
+            if directive == "TEXT":
+                out_json_lines.append(json.dumps(body))
+            elif directive == "JSON": 
+                out_json_lines.append(body)
             else:
-                print(output)
+                raise Exception(f"Unexpected directive {directive}")
+                
+
+
+
+
+        output = display_string  # .capitalize()
+
+        output = output.replace("\n", "<br />\n")
+        output = output.replace(menu_wrap.web_new_line, "\n")
+        print(output, end="<br />\n")
+
 
     def close(self):
         self.end_game = True

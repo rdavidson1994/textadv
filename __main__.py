@@ -1,12 +1,12 @@
 from save_manager import SaveManager
+from os import environ
 import random
-random.seed("seed0001")
+random_seed = environ.get("TEXTADV_RNG_SEED", "seed0001")
+random.seed(random_seed)
 
 import argparse
-from os import environ
-import dill as pickle
-import world
 
+import world
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -18,5 +18,8 @@ if __name__ == "__main__":
     if args.save:
         w = save_manager.load(args.save)
     else:
-        w = world.Random(use_web_output=args.web, save_manager=SaveManager())
+        w = world.Random(
+            use_web_output=args.web,
+            save_manager=SaveManager()
+        )
     w.run_game()
