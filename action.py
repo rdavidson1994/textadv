@@ -451,7 +451,7 @@ class WearArmor(mixins.HeldTarget, mixins.ItemTarget, SingleTargetAction):
     synonyms = ["wear", "equip"]
 
     def check_traits(self):
-        if "armor" not in self.target.traits:
+        if not self.target.has_trait(trait.armor):
             return False, "That item is not armor"
         return super().check_traits()
 
