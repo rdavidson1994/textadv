@@ -179,7 +179,7 @@ class Overworld(location.Location):
             if on_vertical and on_horizontal:
                 return "+-"
             elif on_vertical:
-                return "| "
+                return "|"+space
             elif on_horizontal:
                 return "--"
             else:

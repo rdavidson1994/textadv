@@ -406,7 +406,7 @@ class Humanoid(Person):
 
     def learn_posture(self, posture: Posture):
         if posture not in self.postures_known and not posture.is_default:
-            self.ai.display(f"You learn {posture.name.get_text(self)}")
+            # self.ai.display(f"You learn {posture.name.get_text(self)}")
             self.postures_known.add(posture)
 
     def adopt_posture(self, posture):

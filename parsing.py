@@ -35,6 +35,7 @@ class Parser(AI):
             print(display_string)
             return
 
+        display_string += "\n"
 
         out_json_lines = []
         if not display_string.startswith("###[[["):
@@ -57,6 +58,7 @@ class Parser(AI):
                 raise Exception(f"Unexpected directive {directive}")
         
         for json_line in out_json_lines:
+            assert "\n" not in json_line
             print(json_line)
 
 
@@ -78,7 +80,6 @@ class Parser(AI):
              ' here. Which one do you mean?').format(name=name)
         self.display(s)
         alphabet = string.ascii_lowercase
-
         lookup = {}
         for letter, thing in zip(alphabet, possibility_list):
             self.display(
