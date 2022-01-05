@@ -1,6 +1,6 @@
 import argparse
 import dill as pickle
-from os import path, environ
+from os import path, environ, makedirs
 import json
 from uuid import uuid4
 
@@ -23,6 +23,7 @@ class SaveManager:
             else:
                 save_path = path.join(save_directory, str(uuid4())+".pkl")
 
+        makedirs(save_directory, exist_ok=True)
         with open(save_path, 'wb') as file:
             pickle.dump(world, file)
 
